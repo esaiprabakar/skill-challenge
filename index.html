@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Skill Challenge Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&display=swap">
+<style>
+/* neutral palette: off-white page, white cards, one blue accent, red only for Subscribe */
+:root{--bg:#f6f6f3;--card:#ffffff;--cell:#f1f1ed;--edge:#e4e4de;--blue:#2f43c7;--on:#ffffff;--soft:#dde1f8;--ink:#17171c;--muted:#6a6a64;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Poppins","Noto Sans Tamil",system-ui,sans-serif;font-size:16px;line-height:1.6;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+[hidden]{display:none!important}
+.wrap .wrap{width:100%;margin:0}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-width:0}
+h1{font-size:clamp(1.5rem,5vw,2.1rem);line-height:1.2;margin:0;font-weight:700;color:var(--ink);text-wrap:balance}
+h2{font-size:1rem;margin:0 0 12px;font-weight:600;color:var(--ink)}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:16px;padding:20px;min-width:0}
+label{display:block;font-weight:600;margin-bottom:8px}
+input{font:inherit;color:var(--ink);background:var(--card);border:1px solid #c9c9c2;border-radius:10px;padding:10px 12px;max-width:100%}
+input[type=text],input[type=password]{width:100%;margin-bottom:12px}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 20px;cursor:pointer;background:var(--blue);color:var(--on)}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--edge);padding:8px 14px;font-size:.9rem}
+button.opt{flex:1 1 200px;border:1px solid var(--edge);background:var(--card);color:var(--ink);padding:14px 16px}
+button.opt.on-ok{background:var(--blue);color:var(--on);border-color:var(--blue)}
+button.opt.on-need{background:var(--soft);color:var(--ink);border-color:var(--soft)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.err{color:#a0123a;font-weight:600;font-size:.9rem;margin-bottom:10px}
+/* welcome */
+#welcome{min-height:80vh;justify-content:center}
+.hero{text-align:left}
+.hero .tag{font-size:1.05rem;margin-top:10px}
+.langtog{display:inline-flex;border:1px solid var(--edge);background:var(--card);border-radius:10px;overflow:hidden}
+.langtog button{border-radius:0;background:transparent;color:var(--muted);padding:6px 14px;font-size:.85rem}
+.langtog button[aria-pressed=true]{background:var(--blue);color:var(--on)}
+/* nav */
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:4px}
+.nav button{background:transparent;color:var(--muted);padding:9px 6px;font-size:.9rem}
+.nav button[aria-current=page]{background:var(--blue);color:var(--on)}
+/* dashboard */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:12px;text-align:center;min-width:0}
+.stat b{display:block;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--blue)}
+.stat span{font-size:.75rem;color:var(--muted)}
+.bar{height:8px;border-radius:4px;background:var(--edge);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue);width:0;transition:width .3s}
+.note{border-radius:14px;padding:12px 16px;background:var(--card);border:1px solid var(--edge)}
+.note.warn{border-color:var(--blue)}
+.quote{border-left:4px solid var(--blue);padding:12px 16px;background:var(--cell);border-radius:0 12px 12px 0;font-size:1.05rem;font-weight:600;margin-top:14px}
+.quote.need{border-left-color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cell{border-radius:14px;border:2px solid transparent;background:var(--cell);color:var(--ink);padding:6px 2px;font-weight:400;font-size:.8rem;line-height:1.25;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;font-variant-numeric:tabular-nums}
+.cell b{font-size:1.05rem}
+.cell small{color:inherit;opacity:.75;font-size:.68rem}
+.cell.ok{background:var(--blue);color:var(--on)}
+.cell.need{background:var(--soft);color:var(--ink)}
+.cell.miss{border:2px dashed #c4c4bc;background:transparent}
+.cell.fut{opacity:.45}
+.cell.sel{outline:2px solid var(--ink);outline-offset:1px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;margin-top:12px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+a.sub{display:inline-flex;align-items:center;background:#e62117;color:#fff;font-weight:600;text-decoration:none;border-radius:12px;padding:10px 18px}
+/* achievements */
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{font-family:inherit;font-size:17px;fill:var(--muted)}
+svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badge{border:1px solid var(--edge);border-radius:14px;padding:14px 12px;background:var(--card);text-align:center}
+.badge b{display:block;font-size:1.4rem;color:var(--blue)}
+.badge.lock{opacity:.5}
+.badge.got{background:var(--soft);border-color:var(--soft);color:var(--ink)}
+.badge.got b{color:var(--blue)}
+@media (max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style></head>
+<body>
+<div class="wrap">
+
+  <!-- WELCOME / LOGIN -->
+  <div id="welcome" class="wrap">
+    <div class="row between"><span></span>
+      <div class="langtog" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="ta">தமிழ்</button></div>
+    </div>
+    <div class="hero">
+      <h1 data-i="welcomeTitle"></h1>
+      <p class="tag muted" data-i="welcomeSub"></p>
+    </div>
+    <section class="card">
+      <label for="un" data-i="username"></label>
+      <input type="text" id="un" autocomplete="username" autocapitalize="none" maxlength="20">
+      <label for="pw" data-i="password"></label>
+      <input type="password" id="pw" autocomplete="current-password" minlength="6">
+      <p class="err" id="authErr" role="alert"></p>
+      <div class="row"><button type="button" id="loginBtn" data-i="login"></button><button type="button" class="ghost" id="signupBtn" data-i="signup"></button></div>
+      <p class="small muted" style="margin-top:12px" data-i="noReset"></p>
+    </section>
+  </div>
+
+  <!-- APP -->
+  <div id="shell" class="wrap" hidden>
+    <header>
+      <h1 data-i="title"></h1>
+      <p class="muted" id="hello" style="margin-top:6px"></p>
+    </header>
+    <nav class="nav" aria-label="Main">
+      <button type="button" data-tab="dash" data-i="tabDash"></button>
+      <button type="button" data-tab="ach" data-i="tabAch"></button>
+      <button type="button" data-tab="set" data-i="tabSet"></button>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <section id="v-dash" class="wrap">
+      <div class="card" id="setup" hidden>
+        <label for="start" data-i="startQ"></label>
+        <div class="row"><input type="date" id="start" min="2026-10-01" max="2026-12-31"><button type="button" id="go" data-i="startBtn"></button></div>
+        <p class="small muted" style="margin-top:10px" data-i="startHint"></p>
+      </div>
+      <div id="app" class="wrap">
+        <div class="stats">
+          <div class="stat"><b id="sDone">0</b><span data-i="sDone"></span></div>
+          <div class="stat"><b id="sCur">0</b><span data-i="sCur"></span></div>
+          <div class="stat"><b id="sBest">0</b><span data-i="sBest"></span></div>
+          <div class="stat"><b id="sLeft">0</b><span data-i="sLeft"></span></div>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+        <div id="msg"></div>
+        <section class="card">
+          <h2 id="rangeTitle"></h2>
+          <div id="days" class="grid"></div>
+          <div class="row between" style="margin-top:12px">
+            <button type="button" class="ghost" id="prevBtn" data-i="prev"></button>
+            <button type="button" class="ghost" id="nextBtn" data-i="next"></button>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--blue)"></i><span data-i="lgOk"></span></span>
+            <span><i style="background:var(--soft)"></i><span data-i="lgNeed"></span></span>
+            <span><i style="border:2px dashed #c4c4bc"></i><span data-i="lgSkip"></span></span>
+          </div>
+        </section>
+        <section class="card">
+          <h2 id="dTitle"></h2>
+          <div class="row">
+            <button type="button" class="opt" id="optOk" data-i="optOk"></button>
+            <button type="button" class="opt" id="optNeed" data-i="optNeed"></button>
+          </div>
+          <p class="quote" id="quote" hidden></p>
+        </section>
+      </div>
+      <section class="card">
+        <a class="sub" href="https://www.youtube.com/@esaiprabakar?sub_confirmation=1" target="_blank" rel="noopener" data-i="subscribe"></a>
+        <p class="small muted" style="margin-top:12px" id="saveNote"></p>
+      </section>
+    </section>
+
+    <!-- ACHIEVEMENTS -->
+    <section id="v-ach" class="wrap" hidden>
+      <div id="achEmpty" class="note" hidden data-i="achEmpty"></div>
+      <div id="achBody" class="wrap">
+        <section class="card"><h2 data-i="chWeek"></h2><p class="small muted" data-i="chWeekD" style="margin-bottom:8px"></p><div id="chartWeek"></div></section>
+        <section class="card"><h2 data-i="chCum"></h2><p class="small muted" data-i="chCumD" style="margin-bottom:8px"></p><div id="chartCum"></div>
+          <div class="legend"><span><i style="background:var(--blue)"></i><span data-i="lgYours"></span></span><span><i style="border:2px dashed #c4c4bc"></i><span data-i="lgIdeal"></span></span></div></section>
+        <section class="card"><h2 data-i="badges"></h2><div class="badges" id="badges"></div></section>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="v-set" class="wrap" hidden>
+      <section class="card">
+        <h2 data-i="language"></h2>
+        <div class="langtog" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="ta">தமிழ்</button></div>
+      </section>
+      <section class="card">
+        <h2 data-i="account"></h2>
+        <p id="acct" style="margin-bottom:12px"></p>
+        <button type="button" class="ghost" id="logoutBtn" data-i="logout"></button>
+      </section>
+      <section class="card">
+        <h2 data-i="startDate"></h2>
+        <p class="small muted" id="startShow" style="margin-bottom:12px"></p>
+        <button type="button" class="ghost" id="resetBtn" data-i="changeStart"></button>
+        <div class="note" id="resetBox" hidden style="margin-top:12px"><span data-i="resetWarn"></span>
+          <div class="row" style="margin-top:10px"><button type="button" id="resetYes" data-i="yes"></button><button type="button" class="ghost" id="resetNo" data-i="cancel"></button></div></div>
+      </section>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  var SB_URL='https://wrsdoywbltoshryvyemw.supabase.co', SB_KEY='sb_publishable_F5V09cUWf08nDxcA5-IXvA__HkEu9Sm';
+  var sb=supabase.createClient(SB_URL,SB_KEY), uid=null, uname='';
+  var END='2027-01-01', PAGE=30, LKEY='skillChallenge.lang';
+  var state={start:null,days:{}}, page=0, sel=null, tab='dash', lang='en';
+  function $(id){return document.getElementById(id);}
+  function pad(n){return n<10?'0'+n:''+n;}
+  function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  function parse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+  function dayDiff(a,b){return Math.round((Date.UTC(b.getFullYear(),b.getMonth(),b.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);}
+  function addDays(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);}
+  function today(){var n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate());}
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  var L={
+    en:{welcomeTitle:'Welcome to the Skill Challenge',welcomeSub:'Log in to track your days, streak and achievements. Only you can see your progress.',username:'Username',password:'Password',login:'Log in',signup:'Create account',noReset:'Do not use a password you use anywhere else. There is no password reset.',
+      errU:'Username: 3 to 20 letters, numbers or underscore.',errP:'Password needs at least 6 characters.',taken:'That username is taken.',wrong:'Wrong username or password.',confirmOff:'Account created, but email confirmation must be turned off in Supabase.',
+      title:'Skill Challenge Tracker',hi:'Hi {n}. One tick a day until Jan 1.',tabDash:'Dashboard',tabAch:'Achievements',tabSet:'Settings',
+      startQ:'When did you start?',startBtn:'Start',startHint:'You will see 30 daily dates from your start date.',
+      sDone:'Days done',sCur:'Current streak',sBest:'Best streak',sLeft:'Days left',range:'Day {a} to Day {b}',prev:'← Previous 30',next:'Next 30 →',
+      lgOk:'I did it',lgNeed:'Need motivation',lgSkip:'Skipped',optOk:'I did it today',optNeed:'I need motivation',today:'today',
+      notStarted:'Your start date has not arrived yet.',over:'Challenge over. You showed up {n} days. Share your result in the comments.',skip2:'You have skipped 2 days. Tick today and restart the chain.',skip1:'You skipped yesterday. One day is fine. Do not skip today.',
+      saved:'Saved to your account. Only you can see your progress.',saveFail:'Could not save. Check your connection.',subscribe:'Subscribe',
+      achEmpty:'Set your start date on the Dashboard to see your achievements.',chWeek:'Days done per week',chWeekD:'Each bar is one 7 day week of your challenge. Maximum is 7.',chCum:'Progress so far',chCumD:'Total days done, compared with ticking every single day.',lgYours:'Your days done',lgIdeal:'Every day',
+      badges:'Achievements',b1:'First tick',b3:'3 day streak',b7:'7 day streak',b14:'14 day streak',b30:'30 day streak',bd30:'30 days done',got:'Unlocked',locked:'Locked',week:'W',
+      language:'Language',account:'Account',logout:'Log out',startDate:'Start date',startOn:'Your start date: {d}',changeStart:'Change start date',resetWarn:'This clears your start date and every tick. Sure?',yes:'Yes, clear',cancel:'Cancel',
+      chartAria:'Chart: {s}',
+      doneQ:['The small thing you did today is building tomorrow\'s you.','Motivation fades. Discipline shows up. And so did you.','One more day done. One more link in the chain.','Skill does not arrive in a day. But every day arrives.','You are a little ahead of who you were yesterday.','Small steps, every day. That is what big results are made of.','Nobody was watching, and you still did it. That is character.','1% today. 1% tomorrow. By year end, a different person.','Do not be perfect. Be consistent.','Action speaks louder than excuses.','Starting was the hard part. Now just do not stop.','This tick is a promise you kept to yourself.','It was hard and you did it anyway. That is growth.','Everyone begins at Level 1. You are already moving.','Protect the streak. Come back tomorrow.'],
+      needQ:['Not feeling it today? Do just 10 minutes. Starting makes the rest easier.','Do not wait for motivation. Begin one tiny task right now.','Bad day? That is okay. Just avoid a zero day. Five minutes counts.','Remember why you started. That reason is still there.','Do not skip tomorrow. Take one small step today.','If you are tired, rest. But read one page and keep the chain alive.','Nobody feels ready. You become ready by doing.','You have come this far. Do not stop here.']},
+    ta:{welcomeTitle:'Skill Challenge க்கு வரவேற்பு',welcomeSub:'Login பண்ணி உங்க Days, Streak, Achievements ஐ பாருங்க. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',username:'Username',password:'Password',login:'Login',signup:'Account உருவாக்கு',noReset:'வேற இடத்துல பயன்படுத்துற Password ஐ போடாதீங்க. Password Reset கிடையாது.',
+      errU:'Username: 3 முதல் 20 எழுத்து, எண் அல்லது underscore.',errP:'Password குறைஞ்சது 6 எழுத்து வேணும்.',taken:'இந்த Username ஏற்கனவே இருக்கு.',wrong:'Username அல்லது Password தவறு.',confirmOff:'Account உருவாச்சு, ஆனா Supabase ல Email confirmation ஐ Off பண்ணணும்.',
+      title:'Skill Challenge Tracker',hi:'Hi {n}. தினமும் ஒரு Tick. Jan 1 வரை.',tabDash:'Dashboard',tabAch:'Achievements',tabSet:'Settings',
+      startQ:'நீங்க எந்த தேதியில Start பண்ணீங்க?',startBtn:'Start',startHint:'உங்க தேதியில இருந்து 30 நாள் Calendar வரும்.',
+      sDone:'முடிச்ச நாள்',sCur:'இப்போதைய Streak',sBest:'Best Streak',sLeft:'மீதி நாள்',range:'Day {a} முதல் Day {b}',prev:'← முந்தின 30',next:'அடுத்த 30 →',
+      lgOk:'செஞ்சேன்',lgNeed:'Motivation வேணும்',lgSkip:'Skip',optOk:'இன்னைக்கு செஞ்சேன்',optNeed:'எனக்கு Motivation வேணும்',today:'இன்று',
+      notStarted:'நீங்க தேர்ந்தெடுத்த தேதி இன்னும் வரல.',over:'Challenge முடிஞ்சது. {n} நாள் செஞ்சிருக்கீங்க. Result ஐ Comment ல சொல்லுங்க.',skip2:'2 நாள் Skip ஆயிடுச்சு. இன்னைக்கு Tick பண்ணி Chain ஐ திரும்ப ஆரம்பி.',skip1:'நேத்து Skip ஆயிடுச்சு. ஒரு நாள் பிரச்சினை இல்ல. இன்னைக்கு Skip பண்ணாத.',
+      saved:'உங்க Account ல Save ஆகுது. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',saveFail:'Save ஆகல. Internet ஐ பாருங்க.',subscribe:'Subscribe',
+      achEmpty:'Dashboard ல Start Date ஐ வச்சா Achievements தெரியும்.',chWeek:'வாரத்துக்கு முடிச்ச நாள்',chWeekD:'ஒவ்வொரு Bar உம் உங்க Challenge ஓட 7 நாள் வாரம். அதிகபட்சம் 7.',chCum:'இதுவரை Progress',chCumD:'மொத்தம் முடிச்ச நாள், தினமும் Tick பண்ணா எப்படி இருக்கும் என்பதோட ஒப்பீடு.',lgYours:'உங்க நாட்கள்',lgIdeal:'தினமும் செஞ்சா',
+      badges:'Achievements',b1:'முதல் Tick',b3:'3 நாள் Streak',b7:'7 நாள் Streak',b14:'14 நாள் Streak',b30:'30 நாள் Streak',bd30:'30 நாள் முடிச்சாச்சு',got:'கிடைச்சது',locked:'Lock',week:'W',
+      language:'Language',account:'Account',logout:'Logout',startDate:'Start Date',startOn:'உங்க Start Date: {d}',changeStart:'Start Date ஐ மாத்து',resetWarn:'Start Date, எல்லா Tick உம் அழிஞ்சிடும். சரியா?',yes:'ஆமா, அழி',cancel:'வேண்டாம்',
+      chartAria:'Chart: {s}',
+      doneQ:['இன்னைக்கு நீ செஞ்ச ஒரு சின்ன வேலை, நாளைய உன்னை உருவாக்குது.','Motivation வராது. Discipline தான் வரும். நீ வந்துட்ட.','ஒரு Day Done. இது தான் Chain ஓட ஒரு Link.','Skill ஒரே நாள்ல வராது. ஆனா ஒவ்வொரு நாளும் வரும்.','நேத்து மாதிரி இல்ல, இன்னைக்கு நீ கொஞ்சம் மேல.','Small steps, daily. அது தான் Big result.','யாரும் பாக்கல. ஆனாலும் நீ செஞ்ச. அது தான் Character.','இன்னைக்கு 1%. நாளைக்கும் 1%. Year end ல பெரிய மாற்றம்.','Perfect ஆ இருக்க வேணாம். Consistent ஆ இரு.','Excuse ஐ விட Action எப்பவும் சத்தமா பேசும்.','Start பண்றது தான் கஷ்டம். இப்போ Stop பண்ணாத.','இந்த Tick, நீ உனக்கு கொடுத்த வாக்கு.','கஷ்டமா இருந்தாலும் செஞ்ச. அது தான் வளர்ச்சி.','Level 1 ல இருந்து தான் எல்லாரும் ஆரம்பிக்கிறாங்க. நீ நகர்ந்துட்டு இருக்க.','Streak ஐ காப்பாத்து. நாளைக்கும் வா.'],
+      needQ:['இன்னைக்கு மனசு இல்லையா? 10 நிமிஷம் மட்டும் செய். Start பண்ணா மத்தது தானா வரும்.','Motivation க்கு காத்திருக்காத. ஒரு சின்ன Task ஐ இப்போ ஆரம்பி.','Bad day ஆ? பரவாயில்ல. ஆனா Zero day வேணாம். 5 நிமிஷம் போதும்.','நீ ஏன் Start பண்ணனு நினைச்சு பாரு. அந்த காரணம் இன்னும் இருக்கு.','நாளைக்கு Skip பண்ணாத. இன்னைக்கு ஒரு சின்ன Step எடு.','Tired ஆ இருந்தா Rest எடு. ஆனா Chain ஐ உடைக்காத, ஒரு Page படி.','யாரும் Ready ஆ இருக்க மாட்டாங்க. செய்யும்போது தான் Ready ஆவாங்க.','நீ இவ்வளவு தூரம் வந்துட்ட. இங்க நிறுத்தாத.']}
+  };
+  function t(k,o){var s=(L[lang]&&L[lang][k]!=null)?L[lang][k]:L.en[k]; if(typeof s==='string'&&o){for(var p in o)s=s.replace('{'+p+'}',o[p]);} return s;}
+  function pick(k,key){var arr=t(k),h=0,s=String(key);for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return arr[h%arr.length];}
+  function applyLang(){
+    document.documentElement.lang=lang==='ta'?'ta':'en';
+    var els=document.querySelectorAll('[data-i]');
+    for(var i=0;i<els.length;i++){els[i].textContent=t(els[i].getAttribute('data-i'));}
+    var lb=document.querySelectorAll('[data-lang]');
+    for(i=0;i<lb.length;i++){lb[i].setAttribute('aria-pressed',lb[i].getAttribute('data-lang')===lang?'true':'false');}
+    $('un').placeholder=lang==='ta'?'எழுத்து, எண், underscore':'letters, numbers, underscore';
+    $('pw').placeholder=lang==='ta'?'குறைஞ்சது 6 எழுத்து':'at least 6 characters';
+    render();
+  }
+  function setLang(l){lang=l;try{localStorage.setItem(LKEY,l);}catch(e){}applyLang();}
+
+  var saveT=null;
+  function save(){
+    if(!uid)return; clearTimeout(saveT);
+    saveT=setTimeout(function(){
+      sb.from('progress').upsert({user_id:uid,username:uname,start_date:state.start,days:state.days,updated_at:new Date().toISOString()}).then(function(r){
+        $('saveNote').textContent=r.error?t('saveFail'):t('saved');
+      });
+    },300);
+  }
+  function norm(o){return {start:(o&&o.start)||null,days:(o&&o.days&&typeof o.days==='object')?o.days:{}};}
+
+  function stats(){
+    var s=parse(state.start), e=parse(END), tt=today(), last=tt<e?tt:e, n=dayDiff(s,last)+1, done=0, cur=0, best=0, run=0, i;
+    if(n<0)n=0;
+    for(i=0;i<n;i++){if(state.days[ymd(addDays(s,i))]==='done'){done++;run++;if(run>best)best=run;}else run=0;}
+    var k=n-1; if(k>=0&&state.days[ymd(addDays(s,k))]!=='done'&&dayDiff(s,tt)===k)k--;
+    while(k>=0&&state.days[ymd(addDays(s,k))]==='done'){cur++;k--;}
+    return {n:n,done:done,cur:cur,best:best,left:Math.max(0,dayDiff(tt,e)),total:dayDiff(s,e)+1};
+  }
+
+  /* ---------- charts (inline SVG, brand colors) ---------- */
+  function weekChart(st){
+    var s=parse(state.start), weeks=Math.max(1,Math.ceil(st.n/7)), c=[], i, w;
+    for(i=0;i<weeks;i++)c.push(0);
+    for(i=0;i<st.n;i++){if(state.days[ymd(addDays(s,i))]==='done')c[Math.floor(i/7)]++;}
+    var W=600,H=220,pl=34,pr=8,pt=28,pb=34,pw=W-pl-pr,ph=H-pt-pb,slot=pw/weeks,bw=Math.min(46,slot*.62),g='';
+    for(i=0;i<=7;i+=7){var y=pt+ph-(i/7)*ph;g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="#e4e4de"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+i+'</text>';}
+    for(i=0;i<weeks;i++){
+      var x=pl+slot*i+(slot-bw)/2, h=(c[i]/7)*ph, y2=pt+ph-h;
+      g+='<rect x="'+x+'" y="'+y2+'" width="'+bw+'" height="'+Math.max(h,2)+'" rx="6" fill="'+(c[i]>0?'#2f43c7':'#dde1f8')+'"/>';
+      g+='<text class="val" x="'+(x+bw/2)+'" y="'+(y2-5)+'" text-anchor="middle">'+c[i]+'</text>';
+      g+='<text x="'+(x+bw/2)+'" y="'+(H-8)+'" text-anchor="middle">'+t('week')+(i+1)+'</text>';
+    }
+    return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+t('chartAria',{s:c.join(', ')})+'">'+g+'</svg>';
+  }
+  function cumChart(st){
+    var s=parse(state.start), n=Math.max(st.n,2), cum=[], r=0, i;
+    for(i=0;i<n;i++){if(i<st.n&&state.days[ymd(addDays(s,i))]==='done')r++;cum.push(r);}
+    var W=600,H=220,pl=40,pr=14,pt=26,pb=34,pw=W-pl-pr,ph=H-pt-pb,mx=Math.max(n,1);
+    function X(i){return pl+(i/(n-1))*pw;} function Y(v){return pt+ph-(v/mx)*ph;}
+    var g='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="#e4e4de"/><line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(mx)+'" y2="'+Y(mx)+'" stroke="#e4e4de"/><text x="'+(pl-6)+'" y="'+(Y(0)+4)+'" text-anchor="end">0</text><text x="'+(pl-6)+'" y="'+(Y(mx)+4)+'" text-anchor="end">'+mx+'</text>';
+    g+='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(n-1)+'" y2="'+Y(n)+'" stroke="#8a8a83" stroke-width="2" stroke-dasharray="5 5"/>';
+    var d='',a='M'+X(0)+' '+Y(0);
+    for(i=0;i<n;i++){d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(cum[i]).toFixed(1);a+='L'+X(i).toFixed(1)+' '+Y(cum[i]).toFixed(1);}
+    a+='L'+X(n-1)+' '+Y(0)+'Z';
+    g+='<path d="'+a+'" fill="rgba(47,67,199,.12)"/><path d="'+d+'" fill="none" stroke="#2f43c7" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
+    g+='<circle cx="'+X(n-1)+'" cy="'+Y(cum[n-1])+'" r="5" fill="#2f43c7"/><text class="val" x="'+(X(n-1)-8)+'" y="'+(Y(cum[n-1])-10)+'" text-anchor="end">'+cum[n-1]+'</text>';
+    g+='<text x="'+pl+'" y="'+(H-8)+'">Day 1</text><text x="'+(W-pr)+'" y="'+(H-8)+'" text-anchor="end">Day '+n+'</text>';
+    return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+t('chartAria',{s:cum[n-1]+' / '+n})+'">'+g+'</svg>';
+  }
+  function renderAch(){
+    if(!state.start){$('achEmpty').hidden=false;$('achBody').hidden=true;return;}
+    $('achEmpty').hidden=true;$('achBody').hidden=false;
+    var st=stats();
+    if(st.n<1){$('chartWeek').innerHTML='';$('chartCum').innerHTML='';}
+    else{$('chartWeek').innerHTML=weekChart(st);$('chartCum').innerHTML=cumChart(st);}
+    var B=[['1','b1',st.done>=1],['3','b3',st.best>=3],['7','b7',st.best>=7],['14','b14',st.best>=14],['30','b30',st.best>=30],['30','bd30',st.done>=30]], h='';
+    B.forEach(function(b){h+='<div class="badge '+(b[2]?'got':'lock')+'"><b>'+b[0]+'</b><span>'+t(b[1])+'</span><div class="small">'+(b[2]?t('got'):t('locked'))+'</div></div>';});
+    $('badges').innerHTML=h;
+  }
+
+  /* ---------- dashboard ---------- */
+  function renderDash(){
+    var hasStart=!!state.start;
+    $('setup').hidden=hasStart;$('app').hidden=!hasStart;
+    if(!hasStart)return;
+    var s=parse(state.start), e=parse(END), tt=today(), st=stats(), tk=ymd(tt);
+    var totalDays=dayDiff(s,e)+1, pages=Math.max(1,Math.ceil(totalDays/PAGE));
+    if(page<0)page=0; if(page>pages-1)page=pages-1;
+    if(!sel){var td=dayDiff(s,tt); sel=td<0?ymd(s):(td>=totalDays?ymd(e):tk);}
+    $('sDone').textContent=st.done;$('sCur').textContent=st.cur;$('sBest').textContent=st.best;$('sLeft').textContent=st.left;
+    $('barFill').style.width=Math.min(100,Math.round(st.done/Math.max(1,st.total)*100))+'%';
+    var m='', has1=dayDiff(s,addDays(tt,-1))>=0, has2=dayDiff(s,addDays(tt,-2))>=0, y1=state.days[ymd(addDays(tt,-1))], y2=state.days[ymd(addDays(tt,-2))], tv=state.days[tk];
+    if(dayDiff(s,tt)<0)m='<div class="note">'+t('notStarted')+'</div>';
+    else if(tt>e)m='<div class="note">'+t('over',{n:st.done})+'</div>';
+    else if(!tv&&has1&&has2&&!y1&&!y2)m='<div class="note warn">'+t('skip2')+'</div>';
+    else if(!tv&&has1&&!y1)m='<div class="note warn">'+t('skip1')+'</div>';
+    $('msg').innerHTML=m;
+    var from=page*PAGE, to=Math.min(totalDays,from+PAGE)-1, h='';
+    $('rangeTitle').textContent=t('range',{a:from+1,b:to+1});
+    for(var i=from;i<=to;i++){
+      var d=addDays(s,i), k=ymd(d), v=state.days[k], fut=dayDiff(tt,d)>0, cls='cell';
+      if(v==='done')cls+=' ok';else if(v==='need')cls+=' need';else if(!fut&&k!==tk)cls+=' miss';
+      if(fut)cls+=' fut'; if(k===sel)cls+=' sel';
+      h+='<button type="button" class="'+cls+'" data-d="'+k+'" aria-label="Day '+(i+1)+', '+d.getDate()+' '+MON[d.getMonth()]+'"><b>'+d.getDate()+'</b><small>'+(k===tk?t('today'):MON[d.getMonth()])+'</small></button>';
+    }
+    $('days').innerHTML=h;
+    $('prevBtn').disabled=page<=0;$('nextBtn').disabled=page>=pages-1;
+    var sd=parse(sel), idx=dayDiff(s,sd), fut2=dayDiff(tt,sd)>0, sv=state.days[sel];
+    $('dTitle').textContent='Day '+(idx+1)+'  |  '+sd.getDate()+' '+MON[sd.getMonth()]+' '+sd.getFullYear()+(sel===tk?'  ('+t('today')+')':'');
+    $('optOk').disabled=fut2;$('optNeed').disabled=fut2;
+    $('optOk').className='opt'+(sv==='done'?' on-ok':'');
+    $('optNeed').className='opt'+(sv==='need'?' on-need':'');
+    $('optOk').setAttribute('aria-pressed',sv==='done'?'true':'false');
+    $('optNeed').setAttribute('aria-pressed',sv==='need'?'true':'false');
+    var q=$('quote');
+    if(sv==='done'){q.hidden=false;q.className='quote';q.textContent=pick('doneQ',sel+state.start);}
+    else if(sv==='need'){q.hidden=false;q.className='quote need';q.textContent=pick('needQ',sel+state.start);}
+    else q.hidden=true;
+  }
+
+  function render(){
+    var loggedIn=!!uid;
+    $('welcome').hidden=loggedIn;$('shell').hidden=!loggedIn;
+    if(!loggedIn)return;
+    $('hello').textContent=t('hi',{n:uname||''});
+    var tabs=document.querySelectorAll('[data-tab]');
+    for(var i=0;i<tabs.length;i++){var on=tabs[i].getAttribute('data-tab')===tab;if(on)tabs[i].setAttribute('aria-current','page');else tabs[i].removeAttribute('aria-current');}
+    $('v-dash').hidden=tab!=='dash';$('v-ach').hidden=tab!=='ach';$('v-set').hidden=tab!=='set';
+    if(tab==='dash')renderDash();
+    if(tab==='ach')renderAch();
+    if(tab==='set'){$('acct').textContent=uname;$('startShow').textContent=state.start?t('startOn',{d:state.start}):'';$('resetBtn').hidden=!state.start;}
+  }
+
+  function setDay(v){
+    if(dayDiff(today(),parse(sel))>0)return;
+    if(state.days[sel]===v)delete state.days[sel];else state.days[sel]=v;
+    save();render();
+  }
+
+  /* ---------- auth ---------- */
+  function fake(u){return 'u_'+u+'@skillchallenge.app';}
+  function err(m){$('authErr').textContent=m||'';}
+  async function afterAuth(user){
+    uid=user.id;uname=(user.user_metadata&&user.user_metadata.username)||'';
+    var r=await sb.from('progress').select('start_date,days').eq('user_id',uid).maybeSingle();
+    state=r.data?norm({start:r.data.start_date,days:r.data.days}):{start:null,days:{}};
+    sel=null;page=0;tab='dash';
+    $('saveNote').textContent=t('saved');
+    render();
+  }
+  async function auth(signup){
+    err('');var u=$('un').value.trim().toLowerCase(),p=$('pw').value;
+    if(!/^[a-z0-9_]{3,20}$/.test(u)){err(t('errU'));return;}
+    if(p.length<6){err(t('errP'));return;}
+    var r=signup?await sb.auth.signUp({email:fake(u),password:p,options:{data:{username:u}}}):await sb.auth.signInWithPassword({email:fake(u),password:p});
+    if(r.error){err(/already|registered/i.test(r.error.message)?t('taken'):(/invalid login/i.test(r.error.message)?t('wrong'):r.error.message));return;}
+    if(!r.data.session){err(t('confirmOff'));return;}
+    $('pw').value='';await afterAuth(r.data.user);
+  }
+
+  /* ---------- events ---------- */
+  $('loginBtn').addEventListener('click',function(){auth(false);});
+  $('signupBtn').addEventListener('click',function(){auth(true);});
+  $('pw').addEventListener('keydown',function(e){if(e.key==='Enter')auth(false);});
+  $('logoutBtn').addEventListener('click',async function(){await sb.auth.signOut();uid=null;uname='';state={start:null,days:{}};render();});
+  document.addEventListener('click',function(ev){
+    var lb=ev.target.closest&&ev.target.closest('[data-lang]'); if(lb){setLang(lb.getAttribute('data-lang'));return;}
+    var tb=ev.target.closest&&ev.target.closest('[data-tab]'); if(tb){tab=tb.getAttribute('data-tab');render();}
+  });
+  $('go').addEventListener('click',function(){
+    var v=$('start').value; if(!v){$('start').focus();return;} if(v>END)return;
+    state={start:v,days:{}};sel=null;page=0;save();render();
+  });
+  $('days').addEventListener('click',function(ev){var b=ev.target.closest&&ev.target.closest('button[data-d]'); if(b){sel=b.getAttribute('data-d');render();}});
+  $('optOk').addEventListener('click',function(){setDay('done');});
+  $('optNeed').addEventListener('click',function(){setDay('need');});
+  $('prevBtn').addEventListener('click',function(){page--;render();});
+  $('nextBtn').addEventListener('click',function(){page++;render();});
+  $('resetBtn').addEventListener('click',function(){$('resetBox').hidden=false;});
+  $('resetNo').addEventListener('click',function(){$('resetBox').hidden=true;});
+  $('resetYes').addEventListener('click',function(){state={start:null,days:{}};sel=null;page=0;save();$('resetBox').hidden=true;tab='dash';render();});
+
+  var d0=ymd(today()); $('start').value=d0<'2026-10-01'?'2026-10-01':(d0>'2026-12-31'?'2026-12-31':d0);
+  try{var sl=localStorage.getItem(LKEY);if(sl==='ta'||sl==='en')lang=sl;}catch(e){}
+  applyLang();
+  sb.auth.getSession().then(function(r){if(r.data&&r.data.session)afterAuth(r.data.session.user);});
+})();
+</script>
+</body></html>
