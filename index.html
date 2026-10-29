@@ -42,6 +42,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{
 .langtog{display:inline-flex;border:1px solid var(--edge);background:var(--card);border-radius:10px;overflow:hidden}
 .langtog button{border-radius:0;background:transparent;color:var(--muted);padding:6px 14px;font-size:.85rem}
 .langtog button[aria-pressed=true]{background:var(--blue);color:var(--on)}
+.modetog{display:flex;width:100%}.modetog button{flex:1;padding:10px 14px;font-size:.95rem}
 /* nav */
 .nav{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:4px}
 .nav button{background:transparent;color:var(--muted);padding:9px 6px;font-size:.9rem}
@@ -120,12 +121,19 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
       <p class="tag muted" data-i="welcomeSub"></p>
     </div>
     <section class="card">
+      <div class="langtog modetog" role="group" aria-label="Log in or create account" style="margin-bottom:16px">
+        <button type="button" data-mode="login" data-i="login"></button><button type="button" data-mode="signup" data-i="signup"></button>
+      </div>
       <label for="un" data-i="username"></label>
       <input type="text" id="un" autocomplete="username" autocapitalize="none" maxlength="20">
       <label for="pw" data-i="password"></label>
       <input type="password" id="pw" autocomplete="current-password" minlength="6">
+      <div id="cpWrap" hidden>
+        <label for="cpw" data-i="confirmPw"></label>
+        <input type="password" id="cpw" autocomplete="new-password" minlength="6">
+      </div>
       <p class="err" id="authErr" role="alert"></p>
-      <div class="row"><button type="button" id="loginBtn" data-i="login"></button><button type="button" class="ghost" id="signupBtn" data-i="signup"></button></div>
+      <div class="row"><button type="button" id="authBtn"></button></div>
       <p class="small muted" style="margin-top:12px" data-i="noReset"></p>
     </section>
   </div>
@@ -245,7 +253,7 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
   var SB_URL='https://wrsdoywbltoshryvyemw.supabase.co', SB_KEY='sb_publishable_F5V09cUWf08nDxcA5-IXvA__HkEu9Sm';
   var sb=supabase.createClient(SB_URL,SB_KEY), uid=null, uname='';
   var JAN1='2027-01-01', LKEY='skillChallenge.lang';
-  var state=blank(), tab='dash', lang='en', vy=null, vm=null, noteOpen=false, forShown=false, forN=0, pendStart=null;
+  var mode='login', state=blank(), tab='dash', lang='en', vy=null, vm=null, noteOpen=false, forShown=false, forN=0, pendStart=null;
   var pk={setup:{g:'jan1',n:''},set:{g:'jan1',n:''}};
   function blank(){return {start:null,goal:{t:'jan1',n:0},days:{},notes:{}};}
   function $(id){return document.getElementById(id);}
@@ -260,7 +268,7 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
 
   var L={
     en:{welcomeTitle:'Welcome to the Skill Challenge',welcomeSub:'Log in to track your days, streak and progress. Only you can see your progress.',username:'Username',password:'Password',login:'Log in',signup:'Create account',noReset:'Do not use a password you use anywhere else. There is no password reset.',
-      errU:'Username: 3 to 20 letters, numbers or underscore.',errP:'Password needs at least 6 characters.',taken:'That username is not available. Choose another one, or add a number or an underscore (for example esai_7).',wrong:'Wrong username or password.',confirmOff:'Account created, but email confirmation must be turned off in Supabase.',
+      errU:'Username: 3 to 20 letters, numbers or underscore.',errP:'Password needs at least 6 characters.',confirmPw:'Confirm password',mismatch:'The two passwords do not match.',taken:'That username is not available. Choose another one, or add a number or an underscore (for example esai_7).',wrong:'Wrong username or password.',confirmOff:'Account created, but email confirmation must be turned off in Supabase.',
       title:'Skill Challenge Tracker',hi:'Hi {n}. One tick a day. Goal: {g}.',tabDash:'Dashboard',tabAch:'Progress',tabSet:'Settings',
       startQ:'When do you want to start?',startHint:'Pick today or a later date. You cannot pick a past date.',startPast:'Pick today or a later date.',next:'Next',back:'Back',
       goalQ:'How long is your challenge?',g_jan1:'Till Jan 1',g_60:'60 days',g_90:'90 days',g_custom:'Custom',customLbl:'Number of days (1 to 365)',customErr:'Enter a number of days from 1 to 365.',startBtn:'Start challenge',
@@ -268,7 +276,7 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
       lgOk:'Done',lgSkip:'Missed',cmTitle:'Want to share anything with Esai?',cmSend:'Send',cmHint:'Write your message here',cmSent:'Sent. Thank you.',cmFail:'Could not send. Try again.',cmEmpty:'Write something first.',today:'Today',
       todayTitle:'Today, {d}',didBtn:'I did it today',forYou:'For you',noteQ:'What did you do today, bro?',notePh:'Write what you did today',noteSubmit:'Submit',noteEmpty:'Write what you did first.',cancel:'Cancel',
       doneToday:'You did it today.',yourNote:'Your note',
-      popTitle:'Good work, brotha!',popBody:'One more day done. Come back tomorrow and keep the chain going.',popOk:'Thanks bro',
+      popTitle:'Good work, brotha!',popBody:'One more day done. Come back tomorrow and keep the chain going.',popOk:'Okay',
       chainOk:'You are not breaking the chain. {n} day streak.',chainTick:'Tick today to keep it going.',chainStart:'Start today. This is Day 1 of your chain.',chainBroke:'The chain broke. Tick today and start it again.',
       notStarted:'Your start date has not arrived yet. Starts on {d}.',over:'Challenge over. You showed up {n} days. Share your result in the comments.',skip2:'You have missed 2 days. Tick today and restart the chain.',skip1:'You missed yesterday. One day is fine. Do not miss today.',
       saved:'Saved to your account. Only you can see your progress.',saveFail:'Could not save. Check your connection.',subscribe:'Subscribe',
@@ -280,7 +288,7 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
       doneQ:['The small thing you did today is building tomorrow\'s you.','Motivation fades. Discipline shows up. And so did you.','One more day done. One more link in the chain.','Skill does not arrive in a day. But every day arrives.','You are a little ahead of who you were yesterday.','Small steps, every day. That is what big results are made of.','Nobody was watching, and you still did it. That is character.','1% today. 1% tomorrow. By the end, a different person.','Do not be perfect. Be consistent.','Starting was the hard part. Now just do not stop.'],
       needQ:['Not feeling it today? Do just 10 minutes. Starting makes the rest easier.','Do not wait for motivation. Begin one tiny task right now.','Bad day? That is okay. Just avoid a zero day. Five minutes counts.','Remember why you started. That reason is still there.','Do not skip tomorrow. Take one small step today.','If you are tired, rest. But read one page and keep the chain alive.','Nobody feels ready. You become ready by doing.','You have come this far. Do not stop here.']},
     ta:{welcomeTitle:'Skill Challenge க்கு வரவேற்பு',welcomeSub:'Login பண்ணி உங்க Days, Streak, Progress ஐ பாருங்க. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',username:'Username',password:'Password',login:'Login',signup:'Account உருவாக்கு',noReset:'வேற இடத்துல பயன்படுத்துற Password ஐ போடாதீங்க. Password Reset கிடையாது.',
-      errU:'Username: 3 முதல் 20 எழுத்து, எண் அல்லது underscore.',errP:'Password குறைஞ்சது 6 எழுத்து வேணும்.',taken:'இந்த Username கிடைக்காது. வேற ஒண்ணு தேர்ந்தெடுங்க, இல்ல எண் அல்லது underscore சேருங்க (உதா. esai_7).',wrong:'Username அல்லது Password தவறு.',confirmOff:'Account உருவாச்சு, ஆனா Supabase ல Email confirmation ஐ Off பண்ணணும்.',
+      errU:'Username: 3 முதல் 20 எழுத்து, எண் அல்லது underscore.',errP:'Password குறைஞ்சது 6 எழுத்து வேணும்.',confirmPw:'Password ஐ உறுதிப்படுத்து',mismatch:'இரண்டு Password உம் ஒரே மாதிரி இல்ல.',taken:'இந்த Username கிடைக்காது. வேற ஒண்ணு தேர்ந்தெடுங்க, இல்ல எண் அல்லது underscore சேருங்க (உதா. esai_7).',wrong:'Username அல்லது Password தவறு.',confirmOff:'Account உருவாச்சு, ஆனா Supabase ல Email confirmation ஐ Off பண்ணணும்.',
       title:'Skill Challenge Tracker',hi:'Hi {n}. தினமும் ஒரு Tick. Goal: {g}.',tabDash:'Dashboard',tabAch:'Progress',tabSet:'Settings',
       startQ:'எந்த தேதியில Start பண்ணணும்?',startHint:'இன்னைக்கு அல்லது அதுக்கு அப்புறம் உள்ள தேதியை தேர்ந்தெடுங்க. பழைய தேதி முடியாது.',startPast:'இன்னைக்கு அல்லது அதுக்கு அப்புறம் உள்ள தேதியை தேர்ந்தெடுங்க.',next:'அடுத்து',back:'பின்னாடி',
       goalQ:'உங்க Challenge எத்தனை நாள்?',g_jan1:'Jan 1 வரை',g_60:'60 நாள்',g_90:'90 நாள்',g_custom:'Custom',customLbl:'நாட்களின் எண்ணிக்கை (1 முதல் 365)',customErr:'1 முதல் 365 வரை நாட்களை போடுங்க.',startBtn:'Challenge ஐ Start பண்ணு',
@@ -288,7 +296,7 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
       lgOk:'முடிஞ்சது',lgSkip:'Miss',cmTitle:'Esai க்கு ஏதாவது சொல்லணுமா?',cmSend:'அனுப்பு',cmHint:'உங்க Message ஐ இங்க எழுதுங்க',cmSent:'அனுப்பியாச்சு. நன்றி.',cmFail:'அனுப்ப முடியல. திரும்ப முயற்சி பண்ணுங்க.',cmEmpty:'முதல்ல ஏதாவது எழுதுங்க.',today:'இன்று',
       todayTitle:'இன்று, {d}',didBtn:'இன்னைக்கு பண்ணேன்',forYou:'உனக்காக',noteQ:'இன்னைக்கு என்ன பண்ண bro?',notePh:'இன்னைக்கு என்ன பண்ணீங்கனு எழுதுங்க',noteSubmit:'Submit',noteEmpty:'என்ன பண்ணீங்கனு முதல்ல எழுதுங்க.',cancel:'வேண்டாம்',
       doneToday:'இன்னைக்கு பண்ணிட்டீங்க.',yourNote:'உங்க Note',
-      popTitle:'நல்ல வேலை brotha!',popBody:'இன்னொரு நாள் முடிஞ்சது. நாளைக்கும் வா, Chain ஐ தொடரு.',popOk:'நன்றி bro',
+      popTitle:'நல்ல வேலை brotha!',popBody:'இன்னொரு நாள் முடிஞ்சது. நாளைக்கும் வா, Chain ஐ தொடரு.',popOk:'சரி',
       chainOk:'நீங்க Chain ஐ உடைக்கல. {n} நாள் Streak.',chainTick:'தொடர இன்னைக்கு Tick பண்ணுங்க.',chainStart:'இன்னைக்கே Start பண்ணுங்க. இது உங்க Chain ஓட Day 1.',chainBroke:'Chain உடைஞ்சிடுச்சு. இன்னைக்கு Tick பண்ணி திரும்ப ஆரம்பிங்க.',
       notStarted:'உங்க Start Date இன்னும் வரல. {d} அன்று Start ஆகும்.',over:'Challenge முடிஞ்சது. {n} நாள் செஞ்சிருக்கீங்க. Result ஐ Comment ல சொல்லுங்க.',skip2:'2 நாள் Miss ஆயிடுச்சு. இன்னைக்கு Tick பண்ணி Chain ஐ திரும்ப ஆரம்பி.',skip1:'நேத்து Miss ஆயிடுச்சு. ஒரு நாள் பிரச்சினை இல்ல. இன்னைக்கு Miss பண்ணாத.',
       saved:'உங்க Account ல Save ஆகுது. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',saveFail:'Save ஆகல. Internet ஐ பாருங்க.',subscribe:'Subscribe',
@@ -325,10 +333,19 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
     $('un').placeholder=lang==='ta'?'எழுத்து, எண், underscore':'letters, numbers, underscore';
     $('cmText').placeholder=t('cmHint');
     $('pw').placeholder=lang==='ta'?'குறைஞ்சது 6 எழுத்து':'at least 6 characters';
+    setMode(mode,true);
     render();
   }
   function setLang(l){lang=l;try{localStorage.setItem(LKEY,l);}catch(e){}applyLang();}
 
+  function setMode(m,keep){
+    mode=m; var mb=document.querySelectorAll('[data-mode]'), i;
+    for(i=0;i<mb.length;i++){mb[i].setAttribute('aria-pressed',mb[i].getAttribute('data-mode')===m?'true':'false');}
+    $('cpWrap').hidden=(m!=='signup');
+    $('pw').setAttribute('autocomplete',m==='signup'?'new-password':'current-password');
+    $('authBtn').textContent=t(m==='signup'?'signup':'login');
+    if(!keep){$('authErr').textContent='';$('cpw').value='';}
+  }
   /* ---------- save / load ---------- */
   var saveT=null;
   function pack(){var o={},k;for(k in state.days)o[k]=state.days[k];o._n=state.notes;o._meta={goal:state.goal};return o;}
@@ -533,18 +550,20 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
     err('');var u=$('un').value.trim().toLowerCase(),p=$('pw').value;
     if(!/^[a-z0-9_]{3,20}$/.test(u)){err(t('errU'));return;}
     if(p.length<6){err(t('errP'));return;}
+    if(signup&&p!==$('cpw').value){err(t('mismatch'));return;}
     var r=signup?await sb.auth.signUp({email:fake(u),password:p,options:{data:{username:u}}}):await sb.auth.signInWithPassword({email:fake(u),password:p});
     if(r.error){err(/already|registered/i.test(r.error.message)?t('taken'):(/invalid login/i.test(r.error.message)?t('wrong'):r.error.message));return;}
     if(!r.data.session){err(t('confirmOff'));return;}
-    $('pw').value='';await afterAuth(r.data.user);
+    $('pw').value='';$('cpw').value='';await afterAuth(r.data.user);
   }
 
   /* ---------- events ---------- */
-  $('loginBtn').addEventListener('click',function(){auth(false);});
-  $('signupBtn').addEventListener('click',function(){auth(true);});
-  $('pw').addEventListener('keydown',function(e){if(e.key==='Enter')auth(false);});
+  $('authBtn').addEventListener('click',function(){auth(mode==='signup');});
+  $('pw').addEventListener('keydown',function(e){if(e.key==='Enter'&&mode==='login')auth(false);});
+  $('cpw').addEventListener('keydown',function(e){if(e.key==='Enter')auth(true);});
   $('logoutBtn').addEventListener('click',async function(){await sb.auth.signOut();uid=null;uname='';state=blank();pendStart=null;render();});
   document.addEventListener('click',function(ev){
+    var md=ev.target.closest&&ev.target.closest('[data-mode]'); if(md){setMode(md.getAttribute('data-mode'));return;}
     var lb=ev.target.closest&&ev.target.closest('[data-lang]'); if(lb){setLang(lb.getAttribute('data-lang'));return;}
     var tb=ev.target.closest&&ev.target.closest('[data-tab]'); if(tb){tab=tb.getAttribute('data-tab');render();}
   });
@@ -571,7 +590,7 @@ input[type=number],input[type=date]{width:100%;margin-bottom:12px}
     $('cmSend').disabled=true;
     var r=await sb.from('comments').insert({user_id:uid,username:uname,message:m});
     $('cmSend').disabled=false;
-    if(r.error){$('cmMsg').textContent=t('cmFail');return;}
+    if(r.error){$('cmMsg').textContent=t('cmFail')+' ('+(r.error.message||r.error.code||'')+')';return;}
     $('cmText').value='';$('cmMsg').textContent=t('cmSent');
   });
 
