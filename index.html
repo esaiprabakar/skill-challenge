@@ -11,6 +11,9 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Poppins","Noto Sans Tamil",system-ui,sans-serif;font-size:16px;line-height:1.6;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 [hidden]{display:none!important}
 .wrap .wrap{width:100%;margin:0}
+.modal{position:fixed;inset:0;background:rgba(23,23,28,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal .box{background:var(--card);border-radius:16px;padding:22px;max-width:380px;width:100%}
+.modal h2{margin-bottom:8px}
 .wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-width:0}
 h1{font-size:clamp(1.5rem,5vw,2.1rem);line-height:1.2;margin:0;font-weight:700;color:var(--ink);text-wrap:balance}
 h2{font-size:1rem;margin:0 0 12px;font-weight:600;color:var(--ink)}
@@ -19,6 +22,7 @@ p{margin:0}
 .small{font-size:.85rem}
 .card{background:var(--card);border:1px solid var(--edge);border-radius:16px;padding:20px;min-width:0}
 label{display:block;font-weight:600;margin-bottom:8px}
+textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid #c9c9c2;border-radius:10px;padding:10px 12px;width:100%;resize:vertical;margin-bottom:12px}
 input{font:inherit;color:var(--ink);background:var(--card);border:1px solid #c9c9c2;border-radius:10px;padding:10px 12px;max-width:100%}
 input[type=text],input[type=password]{width:100%;margin-bottom:12px}
 button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 20px;cursor:pointer;background:var(--blue);color:var(--on)}
@@ -27,7 +31,7 @@ button.opt{flex:1 1 200px;border:1px solid var(--edge);background:var(--card);co
 button.opt.on-ok{background:var(--blue);color:var(--on);border-color:var(--blue)}
 button.opt.on-need{background:var(--soft);color:var(--ink);border-color:var(--soft)}
 button:disabled{opacity:.45;cursor:default}
-button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .between{justify-content:space-between}
 .err{color:#a0123a;font-weight:600;font-size:.9rem;margin-bottom:10px}
@@ -75,6 +79,31 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
 .badge.lock{opacity:.5}
 .badge.got{background:var(--soft);border-color:var(--soft);color:var(--ink)}
 .badge.got b{color:var(--blue)}
+
+/* calendar */
+.cal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.cal-head h2{margin:0;text-align:center;flex:1}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{text-align:center;font-size:.72rem;color:var(--muted);padding-bottom:2px}
+.c,button.c{aspect-ratio:1;border-radius:12px;background:var(--cell);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.85rem;font-weight:400;min-width:0;border:2px solid transparent;font-variant-numeric:tabular-nums;padding:0;line-height:1.1}
+.c svg{width:15px;height:15px;margin-top:2px}
+.c.ok,button.c.ok{background:#e1f3e8;color:#0d6a38}
+.c.no,button.c.no{background:#fbe4e3;color:#a11d17}
+.c.out{background:transparent;opacity:.35}
+.c.blank{visibility:hidden}
+.c.today,button.c.today{border-color:var(--blue);font-weight:700}
+button.c.today{cursor:pointer}
+.legend2{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;margin-top:12px}
+.legend2 svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.opts button{background:var(--card);color:var(--ink);border:1px solid var(--edge);padding:14px 10px}
+.opts button[aria-pressed=true]{background:var(--blue);color:var(--on);border-color:var(--blue)}
+.opts button:disabled{opacity:.4}
+.noteList{display:flex;flex-direction:column;gap:10px}
+.noteItem{border-left:4px solid var(--blue);background:var(--cell);border-radius:0 12px 12px 0;padding:10px 14px}
+.noteItem b{display:block;font-size:.8rem;color:var(--muted);font-weight:600}
+.okbox{color:#0d6a38;font-weight:600}
+input[type=number],input[type=date]{width:100%;margin-bottom:12px}
 @media (max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style></head>
@@ -115,10 +144,17 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
 
     <!-- DASHBOARD -->
     <section id="v-dash" class="wrap">
-      <div class="card" id="setup" hidden>
+      <div class="card" id="setup1" hidden>
         <label for="start" data-i="startQ"></label>
-        <div class="row"><input type="date" id="start" min="2026-10-01" max="2026-12-31"><button type="button" id="go" data-i="startBtn"></button></div>
+        <input type="date" id="start">
+        <p class="err" id="startErr" role="alert"></p>
+        <button type="button" id="startNext" data-i="next"></button>
         <p class="small muted" style="margin-top:10px" data-i="startHint"></p>
+      </div>
+      <div class="card" id="setup2" hidden>
+        <h2 data-i="goalQ"></h2>
+        <div id="pk-setup"></div>
+        <button type="button" class="ghost" id="setupBack" data-i="back" style="margin-top:12px"></button>
       </div>
       <div id="app" class="wrap">
         <div class="stats">
@@ -130,41 +166,39 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
         <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
         <div id="msg"></div>
         <section class="card">
-          <h2 id="rangeTitle"></h2>
-          <div id="days" class="grid"></div>
-          <div class="row between" style="margin-top:12px">
-            <button type="button" class="ghost" id="prevBtn" data-i="prev"></button>
-            <button type="button" class="ghost" id="nextBtn" data-i="next"></button>
+          <div class="cal-head">
+            <button type="button" class="ghost" id="mPrev" aria-label="Previous month">&larr;</button>
+            <h2 id="monthTitle"></h2>
+            <button type="button" class="ghost" id="mNext" aria-label="Next month">&rarr;</button>
           </div>
-          <div class="legend">
-            <span><i style="background:var(--blue)"></i><span data-i="lgOk"></span></span>
-            <span><i style="background:var(--soft)"></i><span data-i="lgNeed"></span></span>
-            <span><i style="border:2px dashed #c4c4bc"></i><span data-i="lgSkip"></span></span>
+          <div class="cal" id="dow"></div>
+          <div class="cal" id="cal" style="margin-top:6px"></div>
+          <div class="legend2">
+            <span><span class="okbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span><span data-i="lgOk"></span></span>
+            <span><span style="color:#a11d17"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></span><span data-i="lgSkip"></span></span>
           </div>
+        </section>
+        <div id="chain" class="note"></div>
+        <section class="card" id="todayCard">
+          <h2 id="dTitle"></h2>
+          <div id="todayBody"></div>
         </section>
         <section class="card">
-          <h2 id="dTitle"></h2>
-          <div class="row">
-            <button type="button" class="opt" id="optOk" data-i="optOk"></button>
-            <button type="button" class="opt" id="optNeed" data-i="optNeed"></button>
-          </div>
-          <p class="quote" id="quote" hidden></p>
+          <h2 data-i="cmTitle"></h2>
+          <textarea id="cmText" rows="3" maxlength="500"></textarea>
+          <div class="row"><button type="button" id="cmSend" data-i="cmSend"></button><span class="small muted" id="cmMsg" role="status"></span></div>
         </section>
+        <p class="small muted" id="saveNote"></p>
       </div>
-      <section class="card">
-        <a class="sub" href="https://www.youtube.com/@esaiprabakar?sub_confirmation=1" target="_blank" rel="noopener" data-i="subscribe"></a>
-        <p class="small muted" style="margin-top:12px" id="saveNote"></p>
-      </section>
     </section>
 
-    <!-- ACHIEVEMENTS -->
+    <!-- PROGRESS -->
     <section id="v-ach" class="wrap" hidden>
       <div id="achEmpty" class="note" hidden data-i="achEmpty"></div>
       <div id="achBody" class="wrap">
         <section class="card"><h2 data-i="chWeek"></h2><p class="small muted" data-i="chWeekD" style="margin-bottom:8px"></p><div id="chartWeek"></div></section>
-        <section class="card"><h2 data-i="chCum"></h2><p class="small muted" data-i="chCumD" style="margin-bottom:8px"></p><div id="chartCum"></div>
-          <div class="legend"><span><i style="background:var(--blue)"></i><span data-i="lgYours"></span></span><span><i style="border:2px dashed #c4c4bc"></i><span data-i="lgIdeal"></span></span></div></section>
         <section class="card"><h2 data-i="badges"></h2><div class="badges" id="badges"></div></section>
+        <section class="card"><h2 data-i="notesTitle"></h2><div class="noteList" id="notesList"></div></section>
       </div>
     </section>
 
@@ -174,29 +208,46 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
         <h2 data-i="language"></h2>
         <div class="langtog" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="ta">தமிழ்</button></div>
       </section>
+      <section class="card" id="setStartCard">
+        <h2 data-i="startDate"></h2>
+        <p class="small muted" id="startShow" style="margin-bottom:12px"></p>
+        <input type="date" id="newStart">
+        <p class="err" id="newStartErr" role="alert"></p>
+        <button type="button" class="ghost" id="newStartBtn" data-i="changeStart"></button>
+      </section>
+      <section class="card" id="setGoalCard">
+        <h2 data-i="changeGoal"></h2>
+        <p class="small muted" id="goalShow" style="margin-bottom:12px"></p>
+        <div id="pk-set"></div>
+      </section>
       <section class="card">
         <h2 data-i="account"></h2>
         <p id="acct" style="margin-bottom:12px"></p>
         <button type="button" class="ghost" id="logoutBtn" data-i="logout"></button>
       </section>
       <section class="card">
-        <h2 data-i="startDate"></h2>
-        <p class="small muted" id="startShow" style="margin-bottom:12px"></p>
-        <button type="button" class="ghost" id="resetBtn" data-i="changeStart"></button>
-        <div class="note" id="resetBox" hidden style="margin-top:12px"><span data-i="resetWarn"></span>
-          <div class="row" style="margin-top:10px"><button type="button" id="resetYes" data-i="yes"></button><button type="button" class="ghost" id="resetNo" data-i="cancel"></button></div></div>
+        <a class="sub" href="https://www.youtube.com/@esaiprabakar?sub_confirmation=1" target="_blank" rel="noopener" data-i="subscribe"></a>
       </section>
     </section>
   </div>
 </div>
 
+<div class="modal" id="popup" role="dialog" aria-modal="true" aria-labelledby="pTitle" hidden>
+  <div class="box">
+    <h2 id="pTitle" data-i="popTitle"></h2>
+    <p class="muted" data-i="popBody" style="margin-bottom:16px"></p>
+    <div class="row"><button type="button" id="popOk" data-i="popOk"></button></div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
   var SB_URL='https://wrsdoywbltoshryvyemw.supabase.co', SB_KEY='sb_publishable_F5V09cUWf08nDxcA5-IXvA__HkEu9Sm';
   var sb=supabase.createClient(SB_URL,SB_KEY), uid=null, uname='';
-  var END='2027-01-01', PAGE=30, LKEY='skillChallenge.lang';
-  var state={start:null,days:{}}, page=0, sel=null, tab='dash', lang='en';
+  var JAN1='2027-01-01', LKEY='skillChallenge.lang';
+  var state=blank(), tab='dash', lang='en', vy=null, vm=null, noteOpen=false, forShown=false, forN=0, pendStart=null;
+  var pk={setup:{g:'jan1',n:''},set:{g:'jan1',n:''}};
+  function blank(){return {start:null,goal:{t:'jan1',n:0},days:{},notes:{}};}
   function $(id){return document.getElementById(id);}
   function pad(n){return n<10?'0'+n:''+n;}
   function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -204,40 +255,67 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
   function dayDiff(a,b){return Math.round((Date.UTC(b.getFullYear(),b.getMonth(),b.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);}
   function addDays(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);}
   function today(){var n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate());}
-  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+  var CROSS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>';
 
   var L={
-    en:{welcomeTitle:'Welcome to the Skill Challenge',welcomeSub:'Log in to track your days, streak and achievements. Only you can see your progress.',username:'Username',password:'Password',login:'Log in',signup:'Create account',noReset:'Do not use a password you use anywhere else. There is no password reset.',
-      errU:'Username: 3 to 20 letters, numbers or underscore.',errP:'Password needs at least 6 characters.',taken:'That username is taken.',wrong:'Wrong username or password.',confirmOff:'Account created, but email confirmation must be turned off in Supabase.',
-      title:'Skill Challenge Tracker',hi:'Hi {n}. One tick a day until Jan 1.',tabDash:'Dashboard',tabAch:'Achievements',tabSet:'Settings',
-      startQ:'When did you start?',startBtn:'Start',startHint:'You will see 30 daily dates from your start date.',
-      sDone:'Days done',sCur:'Current streak',sBest:'Best streak',sLeft:'Days left',range:'Day {a} to Day {b}',prev:'← Previous 30',next:'Next 30 →',
-      lgOk:'I did it',lgNeed:'Need motivation',lgSkip:'Skipped',optOk:'I did it today',optNeed:'I need motivation',today:'today',
-      notStarted:'Your start date has not arrived yet.',over:'Challenge over. You showed up {n} days. Share your result in the comments.',skip2:'You have skipped 2 days. Tick today and restart the chain.',skip1:'You skipped yesterday. One day is fine. Do not skip today.',
+    en:{welcomeTitle:'Welcome to the Skill Challenge',welcomeSub:'Log in to track your days, streak and progress. Only you can see your progress.',username:'Username',password:'Password',login:'Log in',signup:'Create account',noReset:'Do not use a password you use anywhere else. There is no password reset.',
+      errU:'Username: 3 to 20 letters, numbers or underscore.',errP:'Password needs at least 6 characters.',taken:'That username is not available. Choose another one, or add a number or an underscore (for example esai_7).',wrong:'Wrong username or password.',confirmOff:'Account created, but email confirmation must be turned off in Supabase.',
+      title:'Skill Challenge Tracker',hi:'Hi {n}. One tick a day. Goal: {g}.',tabDash:'Dashboard',tabAch:'Progress',tabSet:'Settings',
+      startQ:'When do you want to start?',startHint:'Pick today or a later date. You cannot pick a past date.',startPast:'Pick today or a later date.',next:'Next',back:'Back',
+      goalQ:'How long is your challenge?',g_jan1:'Till Jan 1',g_60:'60 days',g_90:'90 days',g_custom:'Custom',customLbl:'Number of days (1 to 365)',customErr:'Enter a number of days from 1 to 365.',startBtn:'Start challenge',
+      sDone:'Days done',sCur:'Current streak',sBest:'Best streak',sLeft:'Days left',
+      lgOk:'Done',lgSkip:'Missed',cmTitle:'Want to share anything with Esai?',cmSend:'Send',cmHint:'Write your message here',cmSent:'Sent. Thank you.',cmFail:'Could not send. Try again.',cmEmpty:'Write something first.',today:'Today',
+      todayTitle:'Today, {d}',didBtn:'I did it today',forYou:'For you',noteQ:'What did you do today, bro?',notePh:'Write what you did today',noteSubmit:'Submit',noteEmpty:'Write what you did first.',cancel:'Cancel',
+      doneToday:'You did it today.',yourNote:'Your note',
+      popTitle:'Good work, brotha!',popBody:'One more day done. Come back tomorrow and keep the chain going.',popOk:'Thanks bro',
+      chainOk:'You are not breaking the chain. {n} day streak.',chainTick:'Tick today to keep it going.',chainStart:'Start today. This is Day 1 of your chain.',chainBroke:'The chain broke. Tick today and start it again.',
+      notStarted:'Your start date has not arrived yet. Starts on {d}.',over:'Challenge over. You showed up {n} days. Share your result in the comments.',skip2:'You have missed 2 days. Tick today and restart the chain.',skip1:'You missed yesterday. One day is fine. Do not miss today.',
       saved:'Saved to your account. Only you can see your progress.',saveFail:'Could not save. Check your connection.',subscribe:'Subscribe',
-      achEmpty:'Set your start date on the Dashboard to see your achievements.',chWeek:'Days done per week',chWeekD:'Each bar is one 7 day week of your challenge. Maximum is 7.',chCum:'Progress so far',chCumD:'Total days done, compared with ticking every single day.',lgYours:'Your days done',lgIdeal:'Every day',
-      badges:'Achievements',b1:'First tick',b3:'3 day streak',b7:'7 day streak',b14:'14 day streak',b30:'30 day streak',bd30:'30 days done',got:'Unlocked',locked:'Locked',week:'W',
-      language:'Language',account:'Account',logout:'Log out',startDate:'Start date',startOn:'Your start date: {d}',changeStart:'Change start date',resetWarn:'This clears your start date and every tick. Sure?',yes:'Yes, clear',cancel:'Cancel',
+      achEmpty:'Set your start date on the Dashboard to see your progress.',chWeek:'Days done per week',chWeekD:'Each bar is one 7 day week of your challenge. Maximum is 7.',
+      badges:'Achievements',b1:'First tick',b3:'3 day streak',b7:'7 day streak',b14:'14 day streak',b30:'30 day streak',bd30:'30 days done',got:'Unlocked',locked:'Locked',week:'W',notesTitle:'Your notes',notesNone:'No notes yet. Your notes show here after you tick a day.',
+      language:'Language',account:'Account',logout:'Log out',startDate:'Start date',startOn:'Your start date: {d}. Pick a new date from {d} onwards.',changeStart:'Change start date',startMin:'You cannot pick a date before {d}.',startNeed:'Pick a date first.',
+      changeGoal:'Change goal period',goalNow:'Current goal: {g}. Ends on {e}.',saveGoal:'Save goal',goalSaved:'Goal period updated.',startSaved:'Start date updated.',
       chartAria:'Chart: {s}',
-      doneQ:['The small thing you did today is building tomorrow\'s you.','Motivation fades. Discipline shows up. And so did you.','One more day done. One more link in the chain.','Skill does not arrive in a day. But every day arrives.','You are a little ahead of who you were yesterday.','Small steps, every day. That is what big results are made of.','Nobody was watching, and you still did it. That is character.','1% today. 1% tomorrow. By year end, a different person.','Do not be perfect. Be consistent.','Action speaks louder than excuses.','Starting was the hard part. Now just do not stop.','This tick is a promise you kept to yourself.','It was hard and you did it anyway. That is growth.','Everyone begins at Level 1. You are already moving.','Protect the streak. Come back tomorrow.'],
+      doneQ:['The small thing you did today is building tomorrow\'s you.','Motivation fades. Discipline shows up. And so did you.','One more day done. One more link in the chain.','Skill does not arrive in a day. But every day arrives.','You are a little ahead of who you were yesterday.','Small steps, every day. That is what big results are made of.','Nobody was watching, and you still did it. That is character.','1% today. 1% tomorrow. By the end, a different person.','Do not be perfect. Be consistent.','Starting was the hard part. Now just do not stop.'],
       needQ:['Not feeling it today? Do just 10 minutes. Starting makes the rest easier.','Do not wait for motivation. Begin one tiny task right now.','Bad day? That is okay. Just avoid a zero day. Five minutes counts.','Remember why you started. That reason is still there.','Do not skip tomorrow. Take one small step today.','If you are tired, rest. But read one page and keep the chain alive.','Nobody feels ready. You become ready by doing.','You have come this far. Do not stop here.']},
-    ta:{welcomeTitle:'Skill Challenge க்கு வரவேற்பு',welcomeSub:'Login பண்ணி உங்க Days, Streak, Achievements ஐ பாருங்க. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',username:'Username',password:'Password',login:'Login',signup:'Account உருவாக்கு',noReset:'வேற இடத்துல பயன்படுத்துற Password ஐ போடாதீங்க. Password Reset கிடையாது.',
-      errU:'Username: 3 முதல் 20 எழுத்து, எண் அல்லது underscore.',errP:'Password குறைஞ்சது 6 எழுத்து வேணும்.',taken:'இந்த Username ஏற்கனவே இருக்கு.',wrong:'Username அல்லது Password தவறு.',confirmOff:'Account உருவாச்சு, ஆனா Supabase ல Email confirmation ஐ Off பண்ணணும்.',
-      title:'Skill Challenge Tracker',hi:'Hi {n}. தினமும் ஒரு Tick. Jan 1 வரை.',tabDash:'Dashboard',tabAch:'Achievements',tabSet:'Settings',
-      startQ:'நீங்க எந்த தேதியில Start பண்ணீங்க?',startBtn:'Start',startHint:'உங்க தேதியில இருந்து 30 நாள் Calendar வரும்.',
-      sDone:'முடிச்ச நாள்',sCur:'இப்போதைய Streak',sBest:'Best Streak',sLeft:'மீதி நாள்',range:'Day {a} முதல் Day {b}',prev:'← முந்தின 30',next:'அடுத்த 30 →',
-      lgOk:'செஞ்சேன்',lgNeed:'Motivation வேணும்',lgSkip:'Skip',optOk:'இன்னைக்கு செஞ்சேன்',optNeed:'எனக்கு Motivation வேணும்',today:'இன்று',
-      notStarted:'நீங்க தேர்ந்தெடுத்த தேதி இன்னும் வரல.',over:'Challenge முடிஞ்சது. {n} நாள் செஞ்சிருக்கீங்க. Result ஐ Comment ல சொல்லுங்க.',skip2:'2 நாள் Skip ஆயிடுச்சு. இன்னைக்கு Tick பண்ணி Chain ஐ திரும்ப ஆரம்பி.',skip1:'நேத்து Skip ஆயிடுச்சு. ஒரு நாள் பிரச்சினை இல்ல. இன்னைக்கு Skip பண்ணாத.',
+    ta:{welcomeTitle:'Skill Challenge க்கு வரவேற்பு',welcomeSub:'Login பண்ணி உங்க Days, Streak, Progress ஐ பாருங்க. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',username:'Username',password:'Password',login:'Login',signup:'Account உருவாக்கு',noReset:'வேற இடத்துல பயன்படுத்துற Password ஐ போடாதீங்க. Password Reset கிடையாது.',
+      errU:'Username: 3 முதல் 20 எழுத்து, எண் அல்லது underscore.',errP:'Password குறைஞ்சது 6 எழுத்து வேணும்.',taken:'இந்த Username கிடைக்காது. வேற ஒண்ணு தேர்ந்தெடுங்க, இல்ல எண் அல்லது underscore சேருங்க (உதா. esai_7).',wrong:'Username அல்லது Password தவறு.',confirmOff:'Account உருவாச்சு, ஆனா Supabase ல Email confirmation ஐ Off பண்ணணும்.',
+      title:'Skill Challenge Tracker',hi:'Hi {n}. தினமும் ஒரு Tick. Goal: {g}.',tabDash:'Dashboard',tabAch:'Progress',tabSet:'Settings',
+      startQ:'எந்த தேதியில Start பண்ணணும்?',startHint:'இன்னைக்கு அல்லது அதுக்கு அப்புறம் உள்ள தேதியை தேர்ந்தெடுங்க. பழைய தேதி முடியாது.',startPast:'இன்னைக்கு அல்லது அதுக்கு அப்புறம் உள்ள தேதியை தேர்ந்தெடுங்க.',next:'அடுத்து',back:'பின்னாடி',
+      goalQ:'உங்க Challenge எத்தனை நாள்?',g_jan1:'Jan 1 வரை',g_60:'60 நாள்',g_90:'90 நாள்',g_custom:'Custom',customLbl:'நாட்களின் எண்ணிக்கை (1 முதல் 365)',customErr:'1 முதல் 365 வரை நாட்களை போடுங்க.',startBtn:'Challenge ஐ Start பண்ணு',
+      sDone:'முடிச்ச நாள்',sCur:'இப்போதைய Streak',sBest:'Best Streak',sLeft:'மீதி நாள்',
+      lgOk:'முடிஞ்சது',lgSkip:'Miss',cmTitle:'Esai க்கு ஏதாவது சொல்லணுமா?',cmSend:'அனுப்பு',cmHint:'உங்க Message ஐ இங்க எழுதுங்க',cmSent:'அனுப்பியாச்சு. நன்றி.',cmFail:'அனுப்ப முடியல. திரும்ப முயற்சி பண்ணுங்க.',cmEmpty:'முதல்ல ஏதாவது எழுதுங்க.',today:'இன்று',
+      todayTitle:'இன்று, {d}',didBtn:'இன்னைக்கு பண்ணேன்',forYou:'உனக்காக',noteQ:'இன்னைக்கு என்ன பண்ண bro?',notePh:'இன்னைக்கு என்ன பண்ணீங்கனு எழுதுங்க',noteSubmit:'Submit',noteEmpty:'என்ன பண்ணீங்கனு முதல்ல எழுதுங்க.',cancel:'வேண்டாம்',
+      doneToday:'இன்னைக்கு பண்ணிட்டீங்க.',yourNote:'உங்க Note',
+      popTitle:'நல்ல வேலை brotha!',popBody:'இன்னொரு நாள் முடிஞ்சது. நாளைக்கும் வா, Chain ஐ தொடரு.',popOk:'நன்றி bro',
+      chainOk:'நீங்க Chain ஐ உடைக்கல. {n} நாள் Streak.',chainTick:'தொடர இன்னைக்கு Tick பண்ணுங்க.',chainStart:'இன்னைக்கே Start பண்ணுங்க. இது உங்க Chain ஓட Day 1.',chainBroke:'Chain உடைஞ்சிடுச்சு. இன்னைக்கு Tick பண்ணி திரும்ப ஆரம்பிங்க.',
+      notStarted:'உங்க Start Date இன்னும் வரல. {d} அன்று Start ஆகும்.',over:'Challenge முடிஞ்சது. {n} நாள் செஞ்சிருக்கீங்க. Result ஐ Comment ல சொல்லுங்க.',skip2:'2 நாள் Miss ஆயிடுச்சு. இன்னைக்கு Tick பண்ணி Chain ஐ திரும்ப ஆரம்பி.',skip1:'நேத்து Miss ஆயிடுச்சு. ஒரு நாள் பிரச்சினை இல்ல. இன்னைக்கு Miss பண்ணாத.',
       saved:'உங்க Account ல Save ஆகுது. உங்க Progress உங்களுக்கு மட்டும் தான் தெரியும்.',saveFail:'Save ஆகல. Internet ஐ பாருங்க.',subscribe:'Subscribe',
-      achEmpty:'Dashboard ல Start Date ஐ வச்சா Achievements தெரியும்.',chWeek:'வாரத்துக்கு முடிச்ச நாள்',chWeekD:'ஒவ்வொரு Bar உம் உங்க Challenge ஓட 7 நாள் வாரம். அதிகபட்சம் 7.',chCum:'இதுவரை Progress',chCumD:'மொத்தம் முடிச்ச நாள், தினமும் Tick பண்ணா எப்படி இருக்கும் என்பதோட ஒப்பீடு.',lgYours:'உங்க நாட்கள்',lgIdeal:'தினமும் செஞ்சா',
-      badges:'Achievements',b1:'முதல் Tick',b3:'3 நாள் Streak',b7:'7 நாள் Streak',b14:'14 நாள் Streak',b30:'30 நாள் Streak',bd30:'30 நாள் முடிச்சாச்சு',got:'கிடைச்சது',locked:'Lock',week:'W',
-      language:'Language',account:'Account',logout:'Logout',startDate:'Start Date',startOn:'உங்க Start Date: {d}',changeStart:'Start Date ஐ மாத்து',resetWarn:'Start Date, எல்லா Tick உம் அழிஞ்சிடும். சரியா?',yes:'ஆமா, அழி',cancel:'வேண்டாம்',
+      achEmpty:'Dashboard ல Start Date ஐ வச்சா Progress தெரியும்.',chWeek:'வாரத்துக்கு முடிச்ச நாள்',chWeekD:'ஒவ்வொரு Bar உம் உங்க Challenge ஓட 7 நாள் வாரம். அதிகபட்சம் 7.',
+      badges:'Achievements',b1:'முதல் Tick',b3:'3 நாள் Streak',b7:'7 நாள் Streak',b14:'14 நாள் Streak',b30:'30 நாள் Streak',bd30:'30 நாள் முடிச்சாச்சு',got:'கிடைச்சது',locked:'Lock',week:'W',notesTitle:'உங்க Notes',notesNone:'இன்னும் Note இல்ல. ஒரு நாளை Tick பண்ணா இங்க தெரியும்.',
+      language:'Language',account:'Account',logout:'Logout',startDate:'Start Date',startOn:'உங்க Start Date: {d}. {d} முதல் புது தேதியை தேர்ந்தெடுங்க.',changeStart:'Start Date ஐ மாத்து',startMin:'{d} க்கு முன்னாடி உள்ள தேதியை தேர்ந்தெடுக்க முடியாது.',startNeed:'முதல்ல ஒரு தேதியை தேர்ந்தெடுங்க.',
+      changeGoal:'Goal Period ஐ மாத்து',goalNow:'இப்போதைய Goal: {g}. முடிவு தேதி {e}.',saveGoal:'Goal ஐ Save பண்ணு',goalSaved:'Goal Period மாத்தியாச்சு.',startSaved:'Start Date மாத்தியாச்சு.',
       chartAria:'Chart: {s}',
-      doneQ:['இன்னைக்கு நீ செஞ்ச ஒரு சின்ன வேலை, நாளைய உன்னை உருவாக்குது.','Motivation வராது. Discipline தான் வரும். நீ வந்துட்ட.','ஒரு Day Done. இது தான் Chain ஓட ஒரு Link.','Skill ஒரே நாள்ல வராது. ஆனா ஒவ்வொரு நாளும் வரும்.','நேத்து மாதிரி இல்ல, இன்னைக்கு நீ கொஞ்சம் மேல.','Small steps, daily. அது தான் Big result.','யாரும் பாக்கல. ஆனாலும் நீ செஞ்ச. அது தான் Character.','இன்னைக்கு 1%. நாளைக்கும் 1%. Year end ல பெரிய மாற்றம்.','Perfect ஆ இருக்க வேணாம். Consistent ஆ இரு.','Excuse ஐ விட Action எப்பவும் சத்தமா பேசும்.','Start பண்றது தான் கஷ்டம். இப்போ Stop பண்ணாத.','இந்த Tick, நீ உனக்கு கொடுத்த வாக்கு.','கஷ்டமா இருந்தாலும் செஞ்ச. அது தான் வளர்ச்சி.','Level 1 ல இருந்து தான் எல்லாரும் ஆரம்பிக்கிறாங்க. நீ நகர்ந்துட்டு இருக்க.','Streak ஐ காப்பாத்து. நாளைக்கும் வா.'],
+      doneQ:['இன்னைக்கு நீ செஞ்ச ஒரு சின்ன வேலை, நாளைய உன்னை உருவாக்குது.','Motivation வராது. Discipline தான் வரும். நீ வந்துட்ட.','ஒரு Day Done. இது தான் Chain ஓட ஒரு Link.','Skill ஒரே நாள்ல வராது. ஆனா ஒவ்வொரு நாளும் வரும்.','நேத்து மாதிரி இல்ல, இன்னைக்கு நீ கொஞ்சம் மேல.','Small steps, daily. அது தான் Big result.','யாரும் பாக்கல. ஆனாலும் நீ செஞ்ச. அது தான் Character.','இன்னைக்கு 1%. நாளைக்கும் 1%. கடைசில பெரிய மாற்றம்.','Perfect ஆ இருக்க வேணாம். Consistent ஆ இரு.','Start பண்றது தான் கஷ்டம். இப்போ Stop பண்ணாத.'],
       needQ:['இன்னைக்கு மனசு இல்லையா? 10 நிமிஷம் மட்டும் செய். Start பண்ணா மத்தது தானா வரும்.','Motivation க்கு காத்திருக்காத. ஒரு சின்ன Task ஐ இப்போ ஆரம்பி.','Bad day ஆ? பரவாயில்ல. ஆனா Zero day வேணாம். 5 நிமிஷம் போதும்.','நீ ஏன் Start பண்ணனு நினைச்சு பாரு. அந்த காரணம் இன்னும் இருக்கு.','நாளைக்கு Skip பண்ணாத. இன்னைக்கு ஒரு சின்ன Step எடு.','Tired ஆ இருந்தா Rest எடு. ஆனா Chain ஐ உடைக்காத, ஒரு Page படி.','யாரும் Ready ஆ இருக்க மாட்டாங்க. செய்யும்போது தான் Ready ஆவாங்க.','நீ இவ்வளவு தூரம் வந்துட்ட. இங்க நிறுத்தாத.']}
   };
-  function t(k,o){var s=(L[lang]&&L[lang][k]!=null)?L[lang][k]:L.en[k]; if(typeof s==='string'&&o){for(var p in o)s=s.replace('{'+p+'}',o[p]);} return s;}
+  function t(k,o){var s=(L[lang]&&L[lang][k]!=null)?L[lang][k]:L.en[k]; if(typeof s==='string'&&o){for(var p in o)s=s.split('{'+p+'}').join(o[p]);} return s;}
   function pick(k,key){var arr=t(k),h=0,s=String(key);for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return arr[h%arr.length];}
+  function loc(){return lang==='ta'?'ta-IN':'en-US';}
+  function fmt(d,o){return d.toLocaleDateString(loc(),o);}
+
+  /* ---------- goal helpers ---------- */
+  function goalEnd(){
+    var s=parse(state.start), g=state.goal||{t:'jan1'};
+    if(g.t==='60')return addDays(s,59);
+    if(g.t==='90')return addDays(s,89);
+    if(g.t==='custom')return addDays(s,Math.max(1,+g.n||1)-1);
+    return parse(JAN1);
+  }
+  function goalLabel(){var g=state.goal||{t:'jan1'};return g.t==='custom'?(g.n+' '+(lang==='ta'?'நாள்':'days')):t('g_'+g.t);}
+
+  /* ---------- language ---------- */
   function applyLang(){
     document.documentElement.lang=lang==='ta'?'ta':'en';
     var els=document.querySelectorAll('[data-i]');
@@ -245,24 +323,33 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
     var lb=document.querySelectorAll('[data-lang]');
     for(i=0;i<lb.length;i++){lb[i].setAttribute('aria-pressed',lb[i].getAttribute('data-lang')===lang?'true':'false');}
     $('un').placeholder=lang==='ta'?'எழுத்து, எண், underscore':'letters, numbers, underscore';
+    $('cmText').placeholder=t('cmHint');
     $('pw').placeholder=lang==='ta'?'குறைஞ்சது 6 எழுத்து':'at least 6 characters';
     render();
   }
   function setLang(l){lang=l;try{localStorage.setItem(LKEY,l);}catch(e){}applyLang();}
 
+  /* ---------- save / load ---------- */
   var saveT=null;
+  function pack(){var o={},k;for(k in state.days)o[k]=state.days[k];o._n=state.notes;o._meta={goal:state.goal};return o;}
   function save(){
     if(!uid)return; clearTimeout(saveT);
     saveT=setTimeout(function(){
-      sb.from('progress').upsert({user_id:uid,username:uname,start_date:state.start,days:state.days,updated_at:new Date().toISOString()}).then(function(r){
+      sb.from('progress').upsert({user_id:uid,username:uname,start_date:state.start,days:pack(),updated_at:new Date().toISOString()}).then(function(r){
         $('saveNote').textContent=r.error?t('saveFail'):t('saved');
       });
     },300);
   }
-  function norm(o){return {start:(o&&o.start)||null,days:(o&&o.days&&typeof o.days==='object')?o.days:{}};}
+  function unpack(start,days){
+    var st=blank(), k; st.start=start||null;
+    if(days&&typeof days==='object'){
+      for(k in days){if(k==='_n'){st.notes=(days._n&&typeof days._n==='object')?days._n:{};}else if(k==='_meta'){if(days._meta&&days._meta.goal&&days._meta.goal.t)st.goal=days._meta.goal;}else st.days[k]=days[k];}
+    }
+    return st;
+  }
 
   function stats(){
-    var s=parse(state.start), e=parse(END), tt=today(), last=tt<e?tt:e, n=dayDiff(s,last)+1, done=0, cur=0, best=0, run=0, i;
+    var s=parse(state.start), e=goalEnd(), tt=today(), last=tt<e?tt:e, n=dayDiff(s,last)+1, done=0, cur=0, best=0, run=0, i;
     if(n<0)n=0;
     for(i=0;i<n;i++){if(state.days[ymd(addDays(s,i))]==='done'){done++;run++;if(run>best)best=run;}else run=0;}
     var k=n-1; if(k>=0&&state.days[ymd(addDays(s,k))]!=='done'&&dayDiff(s,tt)===k)k--;
@@ -270,9 +357,30 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
     return {n:n,done:done,cur:cur,best:best,left:Math.max(0,dayDiff(tt,e)),total:dayDiff(s,e)+1};
   }
 
-  /* ---------- charts (inline SVG, brand colors) ---------- */
+  /* ---------- goal picker (used in setup and in settings) ---------- */
+  function renderPicker(id,key,startStr,submitKey,onSubmit){
+    var root=$(id), P=pk[key], h='', gs=['jan1','60','90','custom'], i;
+    var jan1Ok=!startStr||startStr<JAN1;
+    if(!jan1Ok&&P.g==='jan1')P.g='60';
+    h+='<div class="opts">';
+    for(i=0;i<gs.length;i++){h+='<button type="button" data-g="'+gs[i]+'" aria-pressed="'+(P.g===gs[i])+'"'+((gs[i]==='jan1'&&!jan1Ok)?' disabled':'')+'>'+t('g_'+gs[i])+'</button>';}
+    h+='</div>';
+    if(P.g==='custom'){h+='<label for="'+id+'-n">'+t('customLbl')+'</label><input type="number" id="'+id+'-n" min="1" max="365" inputmode="numeric" value="'+(P.n||'')+'">';}
+    h+='<p class="err" id="'+id+'-e" role="alert"></p><button type="button" data-submit="1">'+t(submitKey)+'</button>';
+    root.innerHTML=h;
+    var btns=root.querySelectorAll('button[data-g]');
+    for(i=0;i<btns.length;i++){btns[i].addEventListener('click',function(){P.g=this.getAttribute('data-g');renderPicker(id,key,startStr,submitKey,onSubmit);});}
+    var ni=$(id+'-n'); if(ni)ni.addEventListener('input',function(){P.n=this.value;});
+    root.querySelector('button[data-submit]').addEventListener('click',function(){
+      var goal={t:P.g,n:0};
+      if(P.g==='custom'){var n=parseInt(P.n,10); if(!(n>=1&&n<=365)){$(id+'-e').textContent=t('customErr');return;} goal.n=n;}
+      onSubmit(goal);
+    });
+  }
+
+  /* ---------- charts ---------- */
   function weekChart(st){
-    var s=parse(state.start), weeks=Math.max(1,Math.ceil(st.n/7)), c=[], i, w;
+    var s=parse(state.start), weeks=Math.max(1,Math.ceil(st.n/7)), c=[], i;
     for(i=0;i<weeks;i++)c.push(0);
     for(i=0;i<st.n;i++){if(state.days[ymd(addDays(s,i))]==='done')c[Math.floor(i/7)]++;}
     var W=600,H=220,pl=34,pr=8,pt=28,pb=34,pw=W-pl-pr,ph=H-pt-pb,slot=pw/weeks,bw=Math.min(46,slot*.62),g='';
@@ -285,89 +393,128 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
     }
     return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+t('chartAria',{s:c.join(', ')})+'">'+g+'</svg>';
   }
-  function cumChart(st){
-    var s=parse(state.start), n=Math.max(st.n,2), cum=[], r=0, i;
-    for(i=0;i<n;i++){if(i<st.n&&state.days[ymd(addDays(s,i))]==='done')r++;cum.push(r);}
-    var W=600,H=220,pl=40,pr=14,pt=26,pb=34,pw=W-pl-pr,ph=H-pt-pb,mx=Math.max(n,1);
-    function X(i){return pl+(i/(n-1))*pw;} function Y(v){return pt+ph-(v/mx)*ph;}
-    var g='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="#e4e4de"/><line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(mx)+'" y2="'+Y(mx)+'" stroke="#e4e4de"/><text x="'+(pl-6)+'" y="'+(Y(0)+4)+'" text-anchor="end">0</text><text x="'+(pl-6)+'" y="'+(Y(mx)+4)+'" text-anchor="end">'+mx+'</text>';
-    g+='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(n-1)+'" y2="'+Y(n)+'" stroke="#8a8a83" stroke-width="2" stroke-dasharray="5 5"/>';
-    var d='',a='M'+X(0)+' '+Y(0);
-    for(i=0;i<n;i++){d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(cum[i]).toFixed(1);a+='L'+X(i).toFixed(1)+' '+Y(cum[i]).toFixed(1);}
-    a+='L'+X(n-1)+' '+Y(0)+'Z';
-    g+='<path d="'+a+'" fill="rgba(47,67,199,.12)"/><path d="'+d+'" fill="none" stroke="#2f43c7" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
-    g+='<circle cx="'+X(n-1)+'" cy="'+Y(cum[n-1])+'" r="5" fill="#2f43c7"/><text class="val" x="'+(X(n-1)-8)+'" y="'+(Y(cum[n-1])-10)+'" text-anchor="end">'+cum[n-1]+'</text>';
-    g+='<text x="'+pl+'" y="'+(H-8)+'">Day 1</text><text x="'+(W-pr)+'" y="'+(H-8)+'" text-anchor="end">Day '+n+'</text>';
-    return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+t('chartAria',{s:cum[n-1]+' / '+n})+'">'+g+'</svg>';
-  }
   function renderAch(){
     if(!state.start){$('achEmpty').hidden=false;$('achBody').hidden=true;return;}
     $('achEmpty').hidden=true;$('achBody').hidden=false;
     var st=stats();
-    if(st.n<1){$('chartWeek').innerHTML='';$('chartCum').innerHTML='';}
-    else{$('chartWeek').innerHTML=weekChart(st);$('chartCum').innerHTML=cumChart(st);}
+    $('chartWeek').innerHTML=st.n<1?'':weekChart(st);
     var B=[['1','b1',st.done>=1],['3','b3',st.best>=3],['7','b7',st.best>=7],['14','b14',st.best>=14],['30','b30',st.best>=30],['30','bd30',st.done>=30]], h='';
     B.forEach(function(b){h+='<div class="badge '+(b[2]?'got':'lock')+'"><b>'+b[0]+'</b><span>'+t(b[1])+'</span><div class="small">'+(b[2]?t('got'):t('locked'))+'</div></div>';});
     $('badges').innerHTML=h;
+    var keys=Object.keys(state.notes||{}).sort().reverse(), nl=$('notesList'); nl.innerHTML='';
+    if(!keys.length){var p=document.createElement('p');p.className='small muted';p.textContent=t('notesNone');nl.appendChild(p);}
+    keys.forEach(function(k){
+      var d=document.createElement('div');d.className='noteItem';
+      var b=document.createElement('b');b.textContent=fmt(parse(k),{day:'numeric',month:'short',year:'numeric'});
+      var sp=document.createElement('span');sp.textContent=state.notes[k];
+      d.appendChild(b);d.appendChild(sp);nl.appendChild(d);
+    });
   }
 
   /* ---------- dashboard ---------- */
   function renderDash(){
     var hasStart=!!state.start;
-    $('setup').hidden=hasStart;$('app').hidden=!hasStart;
-    if(!hasStart)return;
-    var s=parse(state.start), e=parse(END), tt=today(), st=stats(), tk=ymd(tt);
-    var totalDays=dayDiff(s,e)+1, pages=Math.max(1,Math.ceil(totalDays/PAGE));
-    if(page<0)page=0; if(page>pages-1)page=pages-1;
-    if(!sel){var td=dayDiff(s,tt); sel=td<0?ymd(s):(td>=totalDays?ymd(e):tk);}
+    $('setup1').hidden=hasStart||!!pendStart;$('setup2').hidden=hasStart||!pendStart;$('app').hidden=!hasStart;
+    if(!hasStart){
+      if(pendStart)renderPicker('pk-setup','setup',pendStart,'startBtn',function(goal){state.start=pendStart;state.goal=goal;state.days={};state.notes={};pendStart=null;vy=null;noteOpen=false;forShown=false;save();render();});
+      return;
+    }
+    var s=parse(state.start), e=goalEnd(), tt=today(), st=stats(), tk=ymd(tt), hasT=state.days[tk]==='done';
     $('sDone').textContent=st.done;$('sCur').textContent=st.cur;$('sBest').textContent=st.best;$('sLeft').textContent=st.left;
     $('barFill').style.width=Math.min(100,Math.round(st.done/Math.max(1,st.total)*100))+'%';
-    var m='', has1=dayDiff(s,addDays(tt,-1))>=0, has2=dayDiff(s,addDays(tt,-2))>=0, y1=state.days[ymd(addDays(tt,-1))], y2=state.days[ymd(addDays(tt,-2))], tv=state.days[tk];
-    if(dayDiff(s,tt)<0)m='<div class="note">'+t('notStarted')+'</div>';
+    var m='', has1=dayDiff(s,addDays(tt,-1))>=0, y1=state.days[ymd(addDays(tt,-1))];
+    if(dayDiff(s,tt)<0)m='<div class="note">'+t('notStarted',{d:fmt(s,{day:'numeric',month:'short',year:'numeric'})})+'</div>';
     else if(tt>e)m='<div class="note">'+t('over',{n:st.done})+'</div>';
-    else if(!tv&&has1&&has2&&!y1&&!y2)m='<div class="note warn">'+t('skip2')+'</div>';
-    else if(!tv&&has1&&!y1)m='<div class="note warn">'+t('skip1')+'</div>';
+    else if(!hasT&&has1&&!y1&&dayDiff(s,addDays(tt,-2))>=0&&!state.days[ymd(addDays(tt,-2))])m='<div class="note warn">'+t('skip2')+'</div>';
+    else if(!hasT&&has1&&!y1)m='<div class="note warn">'+t('skip1')+'</div>';
     $('msg').innerHTML=m;
-    var from=page*PAGE, to=Math.min(totalDays,from+PAGE)-1, h='';
-    $('rangeTitle').textContent=t('range',{a:from+1,b:to+1});
-    for(var i=from;i<=to;i++){
-      var d=addDays(s,i), k=ymd(d), v=state.days[k], fut=dayDiff(tt,d)>0, cls='cell';
-      if(v==='done')cls+=' ok';else if(v==='need')cls+=' need';else if(!fut&&k!==tk)cls+=' miss';
-      if(fut)cls+=' fut'; if(k===sel)cls+=' sel';
-      h+='<button type="button" class="'+cls+'" data-d="'+k+'" aria-label="Day '+(i+1)+', '+d.getDate()+' '+MON[d.getMonth()]+'"><b>'+d.getDate()+'</b><small>'+(k===tk?t('today'):MON[d.getMonth()])+'</small></button>';
+
+    /* month calendar */
+    var sm=s.getFullYear()*12+s.getMonth(), em=e.getFullYear()*12+e.getMonth();
+    if(vy===null){var base=(tt<s)?s:(tt>e?e:tt);vy=base.getFullYear();vm=base.getMonth();}
+    var cur=vy*12+vm; if(cur<sm){vy=s.getFullYear();vm=s.getMonth();} if(cur>em){vy=e.getFullYear();vm=e.getMonth();}
+    $('monthTitle').textContent=fmt(new Date(vy,vm,1),{month:'long',year:'numeric'});
+    $('mPrev').disabled=(vy*12+vm)<=sm; $('mNext').disabled=(vy*12+vm)>=em;
+    var dh='',i; for(i=0;i<7;i++){dh+='<div class="dow">'+fmt(new Date(2023,0,1+i),{weekday:'short'})+'</div>';} $('dow').innerHTML=dh;
+    var first=new Date(vy,vm,1), dim=new Date(vy,vm+1,0).getDate(), h='';
+    for(i=0;i<first.getDay();i++)h+='<div class="c blank"></div>';
+    for(i=1;i<=dim;i++){
+      var d=new Date(vy,vm,i), k=ymd(d), inR=d>=s&&d<=e, isT=k===tk, cls='c', icon='', lab=fmt(d,{day:'numeric',month:'long'});
+      if(!inR)cls+=' out';
+      else if(state.days[k]==='done'){cls+=' ok';icon=TICK;lab+=', '+t('lgOk');}
+      else if(d<tt){cls+=' no';icon=CROSS;lab+=', '+t('lgSkip');}
+      if(isT)cls+=' today';
+      if(isT&&inR)h+='<button type="button" class="'+cls+'" data-today="1" aria-label="'+lab+' ('+t('today')+')"><span>'+i+'</span>'+icon+'</button>';
+      else h+='<div class="'+cls+'" aria-label="'+lab+'"><span>'+i+'</span>'+icon+'</div>';
     }
-    $('days').innerHTML=h;
-    $('prevBtn').disabled=page<=0;$('nextBtn').disabled=page>=pages-1;
-    var sd=parse(sel), idx=dayDiff(s,sd), fut2=dayDiff(tt,sd)>0, sv=state.days[sel];
-    $('dTitle').textContent='Day '+(idx+1)+'  |  '+sd.getDate()+' '+MON[sd.getMonth()]+' '+sd.getFullYear()+(sel===tk?'  ('+t('today')+')':'');
-    $('optOk').disabled=fut2;$('optNeed').disabled=fut2;
-    $('optOk').className='opt'+(sv==='done'?' on-ok':'');
-    $('optNeed').className='opt'+(sv==='need'?' on-need':'');
-    $('optOk').setAttribute('aria-pressed',sv==='done'?'true':'false');
-    $('optNeed').setAttribute('aria-pressed',sv==='need'?'true':'false');
-    var q=$('quote');
-    if(sv==='done'){q.hidden=false;q.className='quote';q.textContent=pick('doneQ',sel+state.start);}
-    else if(sv==='need'){q.hidden=false;q.className='quote need';q.textContent=pick('needQ',sel+state.start);}
-    else q.hidden=true;
+    $('cal').innerHTML=h;
+
+    /* chain message */
+    var cm='';
+    if(dayDiff(s,tt)<0)cm='';
+    else if(st.cur>=1)cm=t('chainOk',{n:st.cur})+(hasT?'':' '+t('chainTick'));
+    else if(st.n<=1&&!hasT)cm=t('chainStart');
+    else if(!hasT&&has1&&!y1)cm=t('chainBroke');
+    else if(hasT)cm=t('chainOk',{n:Math.max(1,st.cur)});
+    else cm=t('chainStart');
+    $('chain').hidden=!cm;$('chain').textContent=cm;
+
+    /* today card */
+    $('dTitle').textContent=t('todayTitle',{d:fmt(tt,{day:'numeric',month:'short',year:'numeric'})});
+    var tb=$('todayBody'), inRange=tt>=s&&tt<=e; tb.innerHTML='';
+    function el(tag,cls,txt){var x=document.createElement(tag);if(cls)x.className=cls;if(txt!=null)x.textContent=txt;return x;}
+    if(!inRange){tb.appendChild(el('p','muted',dayDiff(s,tt)<0?t('notStarted',{d:fmt(s,{day:'numeric',month:'short',year:'numeric'})}):t('over',{n:st.done})));return;}
+    if(hasT){
+      tb.appendChild(el('p','okbox',t('doneToday')));
+      var nt=state.notes[tk]; if(nt){var nb=el('div','noteItem');nb.appendChild(el('b',null,t('yourNote')));nb.appendChild(el('span',null,nt));nb.style.marginTop='10px';tb.appendChild(nb);}
+      tb.appendChild(el('p','quote',pick('doneQ',tk+state.start)));
+      return;
+    }
+    if(!noteOpen){
+      var r=el('div','row'), b1=el('button',null,t('didBtn')), b2=el('button','ghost',t('forYou'));
+      b1.type='button';b2.type='button';
+      b1.addEventListener('click',function(){noteOpen=true;forShown=false;renderDash();var ta=$('noteText');if(ta)ta.focus();});
+      b2.addEventListener('click',function(){forN=forShown?forN+1:Math.floor(Math.random()*8);forShown=true;renderDash();});
+      r.appendChild(b1);r.appendChild(b2);tb.appendChild(r);
+      if(forShown)tb.appendChild(el('p','quote need',t('needQ')[forN%t('needQ').length]));
+    }else{
+      var lab=el('label',null,t('noteQ'));lab.setAttribute('for','noteText');
+      var ta=document.createElement('textarea');ta.id='noteText';ta.rows=3;ta.maxLength=300;ta.placeholder=t('notePh');
+      var er=el('p','err');er.id='noteErr';er.setAttribute('role','alert');
+      var rr=el('div','row'), sb1=el('button',null,t('noteSubmit')), cb=el('button','ghost',t('cancel'));
+      sb1.type='button';cb.type='button';
+      sb1.addEventListener('click',function(){
+        var v=ta.value.trim(); if(!v){er.textContent=t('noteEmpty');return;}
+        state.days[tk]='done';state.notes[tk]=v;noteOpen=false;forShown=false;save();render();$('popup').hidden=false;$('popOk').focus();
+      });
+      cb.addEventListener('click',function(){noteOpen=false;renderDash();});
+      rr.appendChild(sb1);rr.appendChild(cb);
+      tb.appendChild(lab);tb.appendChild(ta);tb.appendChild(er);tb.appendChild(rr);
+    }
   }
 
   function render(){
     var loggedIn=!!uid;
     $('welcome').hidden=loggedIn;$('shell').hidden=!loggedIn;
     if(!loggedIn)return;
-    $('hello').textContent=t('hi',{n:uname||''});
+    $('hello').textContent=state.start?t('hi',{n:uname||'',g:goalLabel()}):'';
     var tabs=document.querySelectorAll('[data-tab]');
     for(var i=0;i<tabs.length;i++){var on=tabs[i].getAttribute('data-tab')===tab;if(on)tabs[i].setAttribute('aria-current','page');else tabs[i].removeAttribute('aria-current');}
     $('v-dash').hidden=tab!=='dash';$('v-ach').hidden=tab!=='ach';$('v-set').hidden=tab!=='set';
     if(tab==='dash')renderDash();
     if(tab==='ach')renderAch();
-    if(tab==='set'){$('acct').textContent=uname;$('startShow').textContent=state.start?t('startOn',{d:state.start}):'';$('resetBtn').hidden=!state.start;}
-  }
-
-  function setDay(v){
-    if(dayDiff(today(),parse(sel))>0)return;
-    if(state.days[sel]===v)delete state.days[sel];else state.days[sel]=v;
-    save();render();
+    if(tab==='set'){
+      $('acct').textContent=uname;
+      var has=!!state.start; $('setStartCard').hidden=!has;$('setGoalCard').hidden=!has;
+      if(has){
+        var td=ymd(today()), mn=state.start;
+        $('startShow').textContent=t('startOn',{d:fmt(parse(state.start),{day:'numeric',month:'short',year:'numeric'})});
+        $('newStart').min=mn; if(!$('newStart').value||$('newStart').value<mn)$('newStart').value=mn;
+        $('goalShow').textContent=t('goalNow',{g:goalLabel(),e:fmt(goalEnd(),{day:'numeric',month:'short',year:'numeric'})});
+        if(pk.set.g==='jan1'&&state.goal){pk.set.g=state.goal.t;pk.set.n=state.goal.n||'';}
+        renderPicker('pk-set','set',state.start,'saveGoal',function(goal){state.goal=goal;vy=null;save();$('pk-set-e').textContent='';render();$('pk-set-e').textContent=t('goalSaved');});
+      }
+    }
   }
 
   /* ---------- auth ---------- */
@@ -376,8 +523,9 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
   async function afterAuth(user){
     uid=user.id;uname=(user.user_metadata&&user.user_metadata.username)||'';
     var r=await sb.from('progress').select('start_date,days').eq('user_id',uid).maybeSingle();
-    state=r.data?norm({start:r.data.start_date,days:r.data.days}):{start:null,days:{}};
-    sel=null;page=0;tab='dash';
+    state=r.data?unpack(r.data.start_date,r.data.days):blank();
+    pk.set={g:state.goal.t,n:state.goal.n||''};pk.setup={g:'jan1',n:''};
+    vy=null;tab='dash';pendStart=null;noteOpen=false;forShown=false;
     $('saveNote').textContent=t('saved');
     render();
   }
@@ -395,25 +543,39 @@ svg.chart .val{fill:var(--blue);font-weight:700;font-size:19px}
   $('loginBtn').addEventListener('click',function(){auth(false);});
   $('signupBtn').addEventListener('click',function(){auth(true);});
   $('pw').addEventListener('keydown',function(e){if(e.key==='Enter')auth(false);});
-  $('logoutBtn').addEventListener('click',async function(){await sb.auth.signOut();uid=null;uname='';state={start:null,days:{}};render();});
+  $('logoutBtn').addEventListener('click',async function(){await sb.auth.signOut();uid=null;uname='';state=blank();pendStart=null;render();});
   document.addEventListener('click',function(ev){
     var lb=ev.target.closest&&ev.target.closest('[data-lang]'); if(lb){setLang(lb.getAttribute('data-lang'));return;}
     var tb=ev.target.closest&&ev.target.closest('[data-tab]'); if(tb){tab=tb.getAttribute('data-tab');render();}
   });
-  $('go').addEventListener('click',function(){
-    var v=$('start').value; if(!v){$('start').focus();return;} if(v>END)return;
-    state={start:v,days:{}};sel=null;page=0;save();render();
+  $('startNext').addEventListener('click',function(){
+    var v=$('start').value; $('startErr').textContent='';
+    if(!v){$('startErr').textContent=t('startNeed');return;}
+    if(v<ymd(today())){$('startErr').textContent=t('startPast');return;}
+    pendStart=v;render();
   });
-  $('days').addEventListener('click',function(ev){var b=ev.target.closest&&ev.target.closest('button[data-d]'); if(b){sel=b.getAttribute('data-d');render();}});
-  $('optOk').addEventListener('click',function(){setDay('done');});
-  $('optNeed').addEventListener('click',function(){setDay('need');});
-  $('prevBtn').addEventListener('click',function(){page--;render();});
-  $('nextBtn').addEventListener('click',function(){page++;render();});
-  $('resetBtn').addEventListener('click',function(){$('resetBox').hidden=false;});
-  $('resetNo').addEventListener('click',function(){$('resetBox').hidden=true;});
-  $('resetYes').addEventListener('click',function(){state={start:null,days:{}};sel=null;page=0;save();$('resetBox').hidden=true;tab='dash';render();});
+  $('setupBack').addEventListener('click',function(){pendStart=null;render();});
+  $('cal').addEventListener('click',function(ev){var b=ev.target.closest&&ev.target.closest('button[data-today]'); if(b){$('todayCard').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});}});
+  $('mPrev').addEventListener('click',function(){vm--;if(vm<0){vm=11;vy--;}renderDash();});
+  $('mNext').addEventListener('click',function(){vm++;if(vm>11){vm=0;vy++;}renderDash();});
+  $('popOk').addEventListener('click',function(){$('popup').hidden=true;});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('popup').hidden)$('popup').hidden=true;});
+  $('newStartBtn').addEventListener('click',function(){
+    var v=$('newStart').value, er=$('newStartErr'); er.textContent='';
+    if(!v){er.textContent=t('startNeed');return;}
+    if(v<state.start){er.textContent=t('startMin',{d:state.start});return;}
+    state.start=v; vy=null; save(); render(); $('newStartErr').textContent=t('startSaved');
+  });
+  $('cmSend').addEventListener('click',async function(){
+    var m=$('cmText').value.trim(); if(!m){$('cmMsg').textContent=t('cmEmpty');return;}
+    $('cmSend').disabled=true;
+    var r=await sb.from('comments').insert({user_id:uid,username:uname,message:m});
+    $('cmSend').disabled=false;
+    if(r.error){$('cmMsg').textContent=t('cmFail');return;}
+    $('cmText').value='';$('cmMsg').textContent=t('cmSent');
+  });
 
-  var d0=ymd(today()); $('start').value=d0<'2026-10-01'?'2026-10-01':(d0>'2026-12-31'?'2026-12-31':d0);
+  var d0=ymd(today()); $('start').min=d0; $('start').value=d0;
   try{var sl=localStorage.getItem(LKEY);if(sl==='ta'||sl==='en')lang=sl;}catch(e){}
   applyLang();
   sb.auth.getSession().then(function(r){if(r.data&&r.data.session)afterAuth(r.data.session.user);});
